@@ -14,6 +14,24 @@ pnpm add @abiregistry/sdk
 
 ## Quick Start
 
+### CLI Usage (Recommended)
+
+```bash
+# Initialize config file
+npx abiregistry init
+
+# Set your API key (keep this secret!)
+export ABI_REGISTRY_API_KEY="your-api-key"
+
+# Push ABIs from a directory
+npx abiregistry push --project your-project-id --path ./abis
+
+# Pull ABIs and generate TypeScript files
+npx abiregistry pull --project your-project-id
+```
+
+### Programmatic Usage
+
 ```typescript
 import { AbiRegistry } from '@abiregistry/sdk'
 
@@ -34,8 +52,8 @@ await client.push({
 
 // Pull ABIs and generate typed files
 await client.pullAndGenerate({
-  outDir: 'generated', // default
-  typescript: true,    // default
+  outDir: 'abiregistry', // default
+  typescript: true,       // default
 })
 ```
 
@@ -96,6 +114,83 @@ await client.pullAndGenerate({
   typescript: false,
 })
 ```
+
+## CLI Reference
+
+### Commands
+
+#### `init`
+Create a configuration file:
+```bash
+npx abiregistry init
+```
+
+Creates `abiregistry.config.json`:
+```json
+{
+  "projectId": "your-project-id",
+  "baseUrl": "https://abiregistry.com",
+  "outDir": "abiregistry"
+}
+```
+
+#### `push`
+Push ABIs to the registry:
+```bash
+# Push from directory
+npx abiregistry push --project <project-id> --path ./abis
+
+# Push single file
+npx abiregistry push --project <project-id> --path ./MyContract.json
+
+# With API key
+npx abiregistry push --project <project-id> --path ./abis --api-key <key>
+```
+
+Supports:
+- Single JSON files
+- Directories with multiple JSON files
+- Metadata objects or raw ABI arrays
+
+#### `pull`
+Pull ABIs and generate files:
+```bash
+# Pull with TypeScript (default)
+npx abiregistry pull --project <project-id>
+
+# Pull with JavaScript
+npx abiregistry pull --project <project-id> --js
+
+# Custom output directory
+npx abiregistry pull --project <project-id> --out ./contracts
+```
+
+### Configuration
+
+Three ways to configure (in priority order):
+
+1. **Command-line flags** - `--api-key`, `--project`, `--path`, etc.
+2. **Environment variables** - `ABI_REGISTRY_API_KEY`, `ABI_REGISTRY_PROJECT_ID`
+3. **Config file** - `abiregistry.config.json`
+
+**Environment Variables:**
+```bash
+export ABI_REGISTRY_API_KEY="your-api-key"        # Required (secret!)
+export ABI_REGISTRY_PROJECT_ID="your-project-id"  # Optional
+export ABI_REGISTRY_BASE_URL="https://..."        # Optional
+export ABI_REGISTRY_OUT_DIR="abiregistry"         # Optional
+```
+
+**Config File:**
+```json
+{
+  "projectId": "your-project-id",
+  "baseUrl": "https://abiregistry.com",
+  "outDir": "abiregistry"
+}
+```
+
+⚠️ **Security**: Never commit your API key! Use environment variables for secrets.
 
 ## API Reference
 

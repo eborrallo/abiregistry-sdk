@@ -105,7 +105,6 @@ export const ${this.sanitizeVariableName(abi.contract)}Config = {
         const ext = this.typescript ? '.ts' : '.js'
         const exports = abis.map((abi) => {
             const fileName = this.sanitizeFileName(abi.contract)
-            const varName = this.sanitizeVariableName(abi.contract)
             return `export * from './${fileName}'`
         })
 

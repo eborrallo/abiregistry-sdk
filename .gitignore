@@ -35,3 +35,9 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 
+# Config (users should create their own)
+abiregistry.config.json
+
+# Test artifacts
+test-abis/
+
