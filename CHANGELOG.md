@@ -9,12 +9,13 @@ All notable changes to the ABI Registry SDK will be documented in this file.
 - Initial release of @abiregistry/sdk
 - **AbiRegistry Client** - Programmatic API for push/pull operations
 - **CLI Tool** - Command-line interface (`npx abiregistry`)
+- **Etherscan Integration** - Fetch ABIs directly from verified contracts
 - **Code Generation** - Automatic TypeScript/JavaScript file generation
-- **Configuration** - Support for config files, env vars, and CLI flags
+- **Simplified Configuration** - Only API key required
 - **Type Safety** - Full TypeScript support with `as const` assertions
 - **Multi-library Support** - Compatible with Viem, Ethers.js, Wagmi
 - **Network Filtering** - Filter ABIs by network or address
-- **Comprehensive Tests** - 51 tests with 84%+ coverage
+- **Comprehensive Tests** - 88 tests with 60%+ coverage
 
 ### Features
 
@@ -28,6 +29,7 @@ All notable changes to the ABI Registry SDK will be documented in this file.
 
 #### CLI Commands
 - `init` - Create config file
+- `fetch` - Fetch ABIs from Etherscan (mainnet & sepolia)
 - `push` - Upload ABIs from files/directories
 - `pull` - Download and generate typed files
 - `help` - Show usage information
