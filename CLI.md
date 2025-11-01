@@ -42,6 +42,57 @@ source .env  # or use dotenv
 
 ## Commands
 
+### `fetch` - Fetch from Etherscan
+
+Fetch ABIs from Etherscan for verified contracts and push them to the registry.
+
+#### Fetch Single Contract
+
+```bash
+npx abiregistry fetch --chain 1 --address 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 --name USDC
+```
+
+#### Fetch from Config File
+
+Add contracts to `abiregistry.config.json`:
+```json
+{
+  "outDir": "abiregistry",
+  "contracts": [
+    {
+      "chain": 1,
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "name": "USDC"
+    },
+    {
+      "chain": 11155111,
+      "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      "name": "SepoliaUSDC"
+    }
+  ]
+}
+```
+
+Then run:
+```bash
+npx abiregistry fetch
+```
+
+#### Supported Chains
+
+- `1` - Ethereum Mainnet
+- `11155111` - Sepolia Testnet
+
+#### Etherscan API Key
+
+The fetch command works without an API key but has rate limits. For better performance:
+
+```bash
+export ETHERSCAN_API_KEY="your-etherscan-api-key"
+```
+
+Get your key at [https://etherscan.io/myapikey](https://etherscan.io/myapikey)
+
 ### `push` - Upload ABIs
 
 Upload ABIs from your project to the registry.
@@ -140,6 +191,28 @@ Generates files in `./contracts/` instead of `./abiregistry/`.
 ## Workflows
 
 ### Smart Contract Team Workflow
+
+**Option 1: Fetch from Etherscan (Easiest)**
+
+1. Deploy and verify contracts on Etherscan
+2. Add to `abiregistry.config.json`:
+   ```json
+   {
+     "contracts": [
+       {
+         "chain": 1,
+         "address": "0x...",
+         "name": "MyContract"
+       }
+     ]
+   }
+   ```
+3. Fetch and push:
+   ```bash
+   npx abiregistry fetch
+   ```
+
+**Option 2: Push Local Files**
 
 1. Deploy contracts and extract ABIs
 2. Save ABIs to `./abis` directory
