@@ -60,6 +60,8 @@ Scans the directory for all `.json` files and pushes them.
 npx abiregistry push --project edf99400-6739-438f-9f8b-5b6f323a1048 --path ./MyContract.json
 ```
 
+**Note:** Base URL is configured via `abiregistry.config.json` or `ABI_REGISTRY_BASE_URL` environment variable, not as a CLI flag.
+
 #### ABI File Formats
 
 **Option 1: Metadata Object** (Recommended)
@@ -290,9 +292,15 @@ npx abiregistry pull --project staging-project-id --out ./abis-staging
 ### Custom Base URL (Self-hosted)
 
 ```bash
-npx abiregistry pull \
-  --project <project-id> \
-  --base-url https://registry.yourcompany.com
+# Set in config file
+{
+  "projectId": "your-project-id",
+  "baseUrl": "https://registry.yourcompany.com"
+}
+
+# Or via environment variable
+export ABI_REGISTRY_BASE_URL="https://registry.yourcompany.com"
+npx abiregistry pull --project <project-id>
 ```
 
 ## Best Practices

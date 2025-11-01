@@ -142,9 +142,6 @@ npx abiregistry push --project <project-id> --path ./abis
 
 # Push single file
 npx abiregistry push --project <project-id> --path ./MyContract.json
-
-# With API key
-npx abiregistry push --project <project-id> --path ./abis --api-key <key>
 ```
 
 Supports:

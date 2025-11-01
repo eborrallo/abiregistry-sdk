@@ -23,13 +23,11 @@ Push Options:
   --project <id>      Project ID (required)
   --path <path>       Path to ABI file or directory (required)
   --api-key <key>     API key (or use ABI_REGISTRY_API_KEY env var)
-  --base-url <url>    API base URL (default: https://abiregistry.com)
 
 Pull Options:
   --project <id>      Project ID (required)
   --out <dir>         Output directory (default: abiregistry)
   --api-key <key>     API key (or use ABI_REGISTRY_API_KEY env var)
-  --base-url <url>    API base URL (default: https://abiregistry.com)
   --js                Generate JavaScript instead of TypeScript
 
 Configuration:
@@ -103,7 +101,6 @@ async function main() {
   const config = loadConfig({
     apiKey: typeof options['api-key'] === 'string' ? options['api-key'] : undefined,
     projectId: typeof options.project === 'string' ? options.project : undefined,
-    baseUrl: typeof options['base-url'] === 'string' ? options['base-url'] : undefined,
     outDir: typeof options.out === 'string' ? options.out : undefined,
   })
 
