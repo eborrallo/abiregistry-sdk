@@ -1,7 +1,5 @@
 export type AbiRegistryConfig = {
-    apiKey: string
-    projectId: string
-    baseUrl?: string
+  apiKey: string
 }
 
 export type AbiEntry = {

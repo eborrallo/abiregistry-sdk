@@ -8,13 +8,10 @@ global.fetch = vi.fn()
 describe('AbiRegistry Client', () => {
   let client: AbiRegistry
   const mockApiKey = 'test-api-key'
-  const mockProjectId = 'test-project-id'
 
   beforeEach(() => {
     client = new AbiRegistry({
       apiKey: mockApiKey,
-      projectId: mockProjectId,
-      baseUrl: 'https://test.abiregistry.com',
     })
     vi.clearAllMocks()
   })
@@ -24,12 +21,11 @@ describe('AbiRegistry Client', () => {
       expect(client).toBeInstanceOf(AbiRegistry)
     })
 
-    it('should use default baseUrl if not provided', () => {
-      const clientWithoutUrl = new AbiRegistry({
+    it('should use https://abiregistry.com as baseUrl', () => {
+      const newClient = new AbiRegistry({
         apiKey: mockApiKey,
-        projectId: mockProjectId,
       })
-      expect(clientWithoutUrl).toBeInstanceOf(AbiRegistry)
+      expect(newClient).toBeInstanceOf(AbiRegistry)
     })
   })
 
@@ -60,7 +56,7 @@ describe('AbiRegistry Client', () => {
       })
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://test.abiregistry.com/api/projects/test-project-id/abis',
+        'https://abiregistry.com/api/abis',
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -112,7 +108,7 @@ describe('AbiRegistry Client', () => {
       const abis = await client.pull()
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://test.abiregistry.com/api/projects/test-project-id',
+        'https://abiregistry.com/api/abis',
         expect.objectContaining({
           method: 'GET',
           headers: {

@@ -2,10 +2,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 export type AbiRegistryCliConfig = {
-    apiKey?: string
-    projectId?: string
-    baseUrl?: string
-    outDir?: string
+  apiKey?: string
+  outDir?: string
 }
 
 const CONFIG_FILE_NAME = 'abiregistry.config.json'
@@ -45,55 +43,48 @@ function loadConfigFile(): Partial<AbiRegistryCliConfig> {
 
 /**
  * Load configuration from environment variables
+ * Only API key should come from env (it's a secret)
  */
 function loadEnvConfig(): Partial<AbiRegistryCliConfig> {
-    return {
-        apiKey: process.env.ABI_REGISTRY_API_KEY || process.env.ABIREGISTRY_API_KEY,
-        projectId: process.env.ABI_REGISTRY_PROJECT_ID || process.env.ABIREGISTRY_PROJECT_ID,
-        baseUrl: process.env.ABI_REGISTRY_BASE_URL || process.env.ABIREGISTRY_BASE_URL,
-        outDir: process.env.ABI_REGISTRY_OUT_DIR || process.env.ABIREGISTRY_OUT_DIR,
-    }
+  return {
+    apiKey: process.env.ABI_REGISTRY_API_KEY || process.env.ABIREGISTRY_API_KEY,
+    outDir: process.env.ABI_REGISTRY_OUT_DIR || process.env.ABIREGISTRY_OUT_DIR,
+  }
 }
 
 /**
  * Validate required configuration
  */
 export function validateConfig(config: AbiRegistryCliConfig): { valid: boolean; errors: string[] } {
-    const errors: string[] = []
+  const errors: string[] = []
 
-    if (!config.apiKey) {
-        errors.push('API key is required. Set it via --api-key, ABI_REGISTRY_API_KEY env var, or in abiregistry.config.json')
-    }
+  if (!config.apiKey) {
+    errors.push('API key is required. Set ABI_REGISTRY_API_KEY environment variable')
+  }
 
-    if (!config.projectId) {
-        errors.push('Project ID is required. Set it via --project, ABI_REGISTRY_PROJECT_ID env var, or in abiregistry.config.json')
-    }
-
-    return {
-        valid: errors.length === 0,
-        errors,
-    }
+  return {
+    valid: errors.length === 0,
+    errors,
+  }
 }
 
 /**
  * Create a sample config file
  */
 export function createConfigFile(): void {
-    const configPath = path.join(process.cwd(), CONFIG_FILE_NAME)
+  const configPath = path.join(process.cwd(), CONFIG_FILE_NAME)
 
-    if (fs.existsSync(configPath)) {
-        console.error(`Error: ${CONFIG_FILE_NAME} already exists`)
-        process.exit(1)
-    }
+  if (fs.existsSync(configPath)) {
+    console.error(`Error: ${CONFIG_FILE_NAME} already exists`)
+    process.exit(1)
+  }
 
-    const sampleConfig: AbiRegistryCliConfig = {
-        projectId: 'your-project-id',
-        baseUrl: 'https://abiregistry.com',
-        outDir: 'abiregistry',
-    }
+  const sampleConfig: AbiRegistryCliConfig = {
+    outDir: 'abiregistry',
+  }
 
-    fs.writeFileSync(configPath, JSON.stringify(sampleConfig, null, 2), 'utf-8')
-    console.log(`✅ Created ${CONFIG_FILE_NAME}`)
-    console.log('⚠️  Remember to set your API key via ABI_REGISTRY_API_KEY environment variable')
+  fs.writeFileSync(configPath, JSON.stringify(sampleConfig, null, 2), 'utf-8')
+  console.log(`✅ Created ${CONFIG_FILE_NAME}`)
+  console.log('⚠️  Remember to set your API key via ABI_REGISTRY_API_KEY environment variable')
 }
 

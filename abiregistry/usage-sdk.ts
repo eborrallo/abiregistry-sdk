@@ -5,10 +5,9 @@
 import { AbiRegistry } from '@abiregistry/sdk'
 
 async function main() {
-  // Initialize the SDK client
+  // Initialize the SDK client (API key contains project permissions)
   const client = new AbiRegistry({
     apiKey: process.env.ABI_REGISTRY_API_KEY || 'your-api-key',
-    projectId: process.env.ABI_REGISTRY_PROJECT_ID || 'your-project-id',
   })
 
   console.log('📦 Pulling ABIs from registry...')
@@ -47,7 +46,6 @@ async function main() {
 async function pushExample() {
   const client = new AbiRegistry({
     apiKey: process.env.ABI_REGISTRY_API_KEY || 'your-api-key',
-    projectId: process.env.ABI_REGISTRY_PROJECT_ID || 'your-project-id',
   })
 
   console.log('🚀 Pushing ABI to registry...')

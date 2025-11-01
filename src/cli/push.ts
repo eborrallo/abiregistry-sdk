@@ -5,13 +5,11 @@ import type { AbiEntry } from '../types'
 
 type PushOptions = {
   apiKey: string
-  projectId: string
-  baseUrl?: string
   abiPath: string
 }
 
 export async function pushCommand(options: PushOptions): Promise<void> {
-  const { apiKey, projectId, baseUrl, abiPath } = options
+  const { apiKey, abiPath } = options
 
   // Resolve the ABI path
   const fullPath = path.resolve(process.cwd(), abiPath)
@@ -47,8 +45,6 @@ export async function pushCommand(options: PushOptions): Promise<void> {
   // Initialize client
   const client = new AbiRegistry({
     apiKey,
-    projectId,
-    baseUrl,
   })
 
   // Push each ABI

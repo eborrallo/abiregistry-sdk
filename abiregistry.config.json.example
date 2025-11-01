@@ -1,6 +1,4 @@
 {
-  "projectId": "your-project-id",
-  "baseUrl": "https://abiregistry.com",
   "outDir": "abiregistry"
 }
 

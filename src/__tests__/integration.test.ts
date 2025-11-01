@@ -11,8 +11,6 @@ describe('Integration Tests', () => {
   beforeEach(() => {
     client = new AbiRegistry({
       apiKey: 'test-key',
-      projectId: 'test-project',
-      baseUrl: 'https://test.abiregistry.com',
     })
     vi.clearAllMocks()
   })
@@ -204,7 +202,7 @@ describe('Integration Tests', () => {
       })
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://test.abiregistry.com/api/projects/test-project/abis',
+        'https://abiregistry.com/api/abis',
         expect.any(Object)
       )
     })

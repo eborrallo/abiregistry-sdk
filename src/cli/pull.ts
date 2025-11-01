@@ -2,22 +2,18 @@ import { AbiRegistry } from '../client'
 
 type PullOptions = {
   apiKey: string
-  projectId: string
-  baseUrl?: string
   outDir?: string
   typescript?: boolean
 }
 
 export async function pullCommand(options: PullOptions): Promise<void> {
-  const { apiKey, projectId, baseUrl, outDir = 'abiregistry', typescript = true } = options
+  const { apiKey, outDir = 'abiregistry', typescript = true } = options
 
-  console.log(`📦 Pulling ABIs from project ${projectId}...`)
+  console.log(`📦 Pulling ABIs from registry...`)
 
   // Initialize client
   const client = new AbiRegistry({
     apiKey,
-    projectId,
-    baseUrl,
   })
 
   try {

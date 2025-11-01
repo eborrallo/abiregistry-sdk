@@ -5,20 +5,17 @@ import { CodeGenerator } from './generator'
 
 export class AbiRegistry {
     private apiKey: string
-    private projectId: string
-    private baseUrl: string
+    private readonly baseUrl = 'https://abiregistry.com'
 
     constructor(config: AbiRegistryConfig) {
         this.apiKey = config.apiKey
-        this.projectId = config.projectId
-        this.baseUrl = config.baseUrl || 'https://abiregistry.com'
     }
 
     /**
      * Push an ABI to the registry
      */
     async push(input: PushAbiInput): Promise<void> {
-        const response = await fetch(`${this.baseUrl}/api/projects/${this.projectId}/abis`, {
+        const response = await fetch(`${this.baseUrl}/api/abis`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -44,7 +41,7 @@ export class AbiRegistry {
      * Pull all ABIs from the registry
      */
     async pull(): Promise<AbiItem[]> {
-        const response = await fetch(`${this.baseUrl}/api/projects/${this.projectId}`, {
+        const response = await fetch(`${this.baseUrl}/api/abis`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${this.apiKey}`,

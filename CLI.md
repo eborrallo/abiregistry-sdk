@@ -49,7 +49,7 @@ Upload ABIs from your project to the registry.
 #### Push from Directory
 
 ```bash
-npx abiregistry push --project edf99400-6739-438f-9f8b-5b6f323a1048 --path ./abis
+npx abiregistry push --path ./abis
 ```
 
 Scans the directory for all `.json` files and pushes them.
@@ -57,10 +57,10 @@ Scans the directory for all `.json` files and pushes them.
 #### Push Single File
 
 ```bash
-npx abiregistry push --project edf99400-6739-438f-9f8b-5b6f323a1048 --path ./MyContract.json
+npx abiregistry push --path ./MyContract.json
 ```
 
-**Note:** Base URL is configured via `abiregistry.config.json` or `ABI_REGISTRY_BASE_URL` environment variable, not as a CLI flag.
+**Note:** Project ID and base URL come from `abiregistry.config.json`. Only the API key is an environment variable.
 
 #### ABI File Formats
 
@@ -109,7 +109,7 @@ Download ABIs and generate typed contract files.
 #### Basic Pull
 
 ```bash
-npx abiregistry pull --project edf99400-6739-438f-9f8b-5b6f323a1048
+npx abiregistry pull
 ```
 
 Generates TypeScript files in `./abiregistry/`:
@@ -124,7 +124,7 @@ abiregistry/
 #### Pull with JavaScript
 
 ```bash
-npx abiregistry pull --project edf99400-6739-438f-9f8b-5b6f323a1048 --js
+npx abiregistry pull --js
 ```
 
 Generates JavaScript files instead.
@@ -132,7 +132,7 @@ Generates JavaScript files instead.
 #### Custom Output Directory
 
 ```bash
-npx abiregistry pull --project edf99400-6739-438f-9f8b-5b6f323a1048 --out ./contracts
+npx abiregistry pull --out ./contracts
 ```
 
 Generates files in `./contracts/` instead of `./abiregistry/`.
@@ -145,14 +145,14 @@ Generates files in `./contracts/` instead of `./abiregistry/`.
 2. Save ABIs to `./abis` directory
 3. Push to registry:
    ```bash
-   npx abiregistry push --project <project-id> --path ./abis
+   npx abiregistry push --path ./abis
    ```
 
 ### Frontend/Backend Team Workflow
 
 1. Pull ABIs and generate typed files:
    ```bash
-   npx abiregistry pull --project <project-id>
+   npx abiregistry pull
    ```
 
 2. Import in your code:

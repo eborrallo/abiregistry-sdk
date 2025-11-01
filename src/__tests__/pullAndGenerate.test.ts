@@ -14,7 +14,6 @@ global.fetch = vi.fn()
 describe('pullAndGenerate', () => {
   let client: AbiRegistry
   const mockApiKey = 'test-api-key'
-  const mockProjectId = 'test-project-id'
 
   const mockAbis: AbiItem[] = [
     {
@@ -40,8 +39,6 @@ describe('pullAndGenerate', () => {
   beforeEach(() => {
     client = new AbiRegistry({
       apiKey: mockApiKey,
-      projectId: mockProjectId,
-      baseUrl: 'https://test.abiregistry.com',
     })
     vi.clearAllMocks()
 

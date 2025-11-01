@@ -17,17 +17,21 @@ pnpm add @abiregistry/sdk
 ### CLI Usage (Recommended)
 
 ```bash
-# Initialize config file
-npx abiregistry init
-
 # Set your API key (keep this secret!)
 export ABI_REGISTRY_API_KEY="your-api-key"
 
+# Optional: Initialize config file for custom output directory
+npx abiregistry init
+# Edit abiregistry.config.json:
+# {
+#   "outDir": "abiregistry"
+# }
+
 # Push ABIs from a directory
-npx abiregistry push --project your-project-id --path ./abis
+npx abiregistry push --path ./abis
 
 # Pull ABIs and generate TypeScript files
-npx abiregistry pull --project your-project-id
+npx abiregistry pull
 ```
 
 ### Programmatic Usage
@@ -35,10 +39,9 @@ npx abiregistry pull --project your-project-id
 ```typescript
 import { AbiRegistry } from '@abiregistry/sdk'
 
-// Initialize the client
+// Initialize the client (API key has project permissions)
 const client = new AbiRegistry({
-  apiKey: 'your-api-key',
-  projectId: 'your-project-id',
+  apiKey: process.env.ABI_REGISTRY_API_KEY,
 })
 
 // Push an ABI
@@ -128,8 +131,6 @@ npx abiregistry init
 Creates `abiregistry.config.json`:
 ```json
 {
-  "projectId": "your-project-id",
-  "baseUrl": "https://abiregistry.com",
   "outDir": "abiregistry"
 }
 ```
@@ -138,10 +139,10 @@ Creates `abiregistry.config.json`:
 Push ABIs to the registry:
 ```bash
 # Push from directory
-npx abiregistry push --project <project-id> --path ./abis
+npx abiregistry push --path ./abis
 
 # Push single file
-npx abiregistry push --project <project-id> --path ./MyContract.json
+npx abiregistry push --path ./MyContract.json
 ```
 
 Supports:
@@ -153,41 +154,39 @@ Supports:
 Pull ABIs and generate files:
 ```bash
 # Pull with TypeScript (default)
-npx abiregistry pull --project <project-id>
+npx abiregistry pull
 
 # Pull with JavaScript
-npx abiregistry pull --project <project-id> --js
+npx abiregistry pull --js
 
 # Custom output directory
-npx abiregistry pull --project <project-id> --out ./contracts
+npx abiregistry pull --out ./contracts
 ```
 
 ### Configuration
 
-Three ways to configure (in priority order):
+Configuration sources (in priority order):
 
-1. **Command-line flags** - `--api-key`, `--project`, `--path`, etc.
-2. **Environment variables** - `ABI_REGISTRY_API_KEY`, `ABI_REGISTRY_PROJECT_ID`
-3. **Config file** - `abiregistry.config.json`
+1. **Command-line flags** - `--path`, `--out`, `--js`
+2. **Config file** - `abiregistry.config.json` (optional settings)
+3. **Environment variable** - `ABI_REGISTRY_API_KEY` (required!)
 
-**Environment Variables:**
+**Environment Variable (Required):**
 ```bash
-export ABI_REGISTRY_API_KEY="your-api-key"        # Required (secret!)
-export ABI_REGISTRY_PROJECT_ID="your-project-id"  # Optional
-export ABI_REGISTRY_BASE_URL="https://..."        # Optional
-export ABI_REGISTRY_OUT_DIR="abiregistry"         # Optional
+export ABI_REGISTRY_API_KEY="your-api-key"  # KEEP SECRET!
 ```
 
-**Config File:**
+**Config File (Optional):**
 ```json
 {
-  "projectId": "your-project-id",
-  "baseUrl": "https://abiregistry.com",
-  "outDir": "abiregistry"
+  "outDir": "abiregistry"  // Customize output directory
 }
 ```
 
-⚠️ **Security**: Never commit your API key! Use environment variables for secrets.
+⚠️ **Security**: 
+- ✅ API key contains your project permissions
+- ✅ Never commit API keys - use `.env` files
+- ✅ Add `.env` to `.gitignore`
 
 ## API Reference
 
@@ -198,8 +197,6 @@ Create a new registry client.
 ```typescript
 const client = new AbiRegistry({
   apiKey: 'your-api-key',
-  projectId: 'your-project-id',
-  baseUrl: 'https://abiregistry.com', // optional
 })
 ```
 
