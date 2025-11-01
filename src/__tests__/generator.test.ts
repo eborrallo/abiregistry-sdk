@@ -67,8 +67,9 @@ describe('CodeGenerator', () => {
 
       const typesFile = files.find((f) => f.path === 'types.ts')
       expect(typesFile).toBeDefined()
-      expect(typesFile!.content).toContain('export type Erc20TokenType')
+      expect(typesFile!.content).toContain('export type erc20TokenType')
       expect(typesFile!.content).toContain('export type AllAbis')
+      expect(typesFile!.content).toContain('erc20Token: erc20TokenType')
     })
 
     it('should include contract metadata in comments', () => {
@@ -168,7 +169,7 @@ describe('CodeGenerator', () => {
 
       expect(files.length).toBeGreaterThan(3)
       expect(files.find((f) => f.path === 'erc20-token.ts')).toBeDefined()
-      expect(files.find((f) => f.path === 'nft-contract.ts')).toBeDefined()
+      expect(files.find((f) => f.path === 'nftcontract.ts')).toBeDefined()
     })
 
     it('should include all ABIs in index file', () => {
@@ -187,7 +188,7 @@ describe('CodeGenerator', () => {
 
       const indexFile = files.find((f) => f.path === 'index.ts')
       expect(indexFile!.content).toContain("export * from './erc20-token'")
-      expect(indexFile!.content).toContain("export * from './nft-contract'")
+      expect(indexFile!.content).toContain("export * from './nftcontract'")
     })
   })
 

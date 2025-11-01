@@ -157,8 +157,11 @@ ${abis.map((abi) => {
      * Sanitize contract name for file name
      */
     private sanitizeFileName(name: string): string {
-        return name
-            .replace(/[^a-zA-Z0-9]/g, '-')
+        // Insert hyphens before capital letters (camelCase/PascalCase to kebab-case)
+        const withHyphens = name.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+        
+        return withHyphens
+            .replace(/[^a-zA-Z0-9-]/g, '-')
             .replace(/-+/g, '-')
             .replace(/^-|-$/g, '')
             .toLowerCase()
@@ -168,9 +171,12 @@ ${abis.map((abi) => {
      * Sanitize contract name for variable name
      */
     private sanitizeVariableName(name: string): string {
-        // Remove special characters and make camelCase
-        const cleaned = name.replace(/[^a-zA-Z0-9]/g, ' ')
-        const words = cleaned.split(' ').filter(Boolean)
+        // Split on non-alphanumeric characters and capital letters
+        const withSpaces = name
+            .replace(/([a-z0-9])([A-Z])/g, '$1 $2') // Add space before capitals
+            .replace(/[^a-zA-Z0-9]/g, ' ') // Replace special chars with spaces
+        
+        const words = withSpaces.split(' ').filter(Boolean)
 
         if (words.length === 0) return 'contract'
 
