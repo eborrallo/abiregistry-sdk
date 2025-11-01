@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "strict": true,
     "paths": {
-      "@abiregistry/*": ["./abiregistry/generated/*"]
+      "@abiregistry/*": ["./abiregistry/*"]
     }
   },
   "include": ["src/**/*", "abiregistry/**/*"],

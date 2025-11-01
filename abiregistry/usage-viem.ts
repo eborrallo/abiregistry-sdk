@@ -4,7 +4,7 @@
 
 import { createPublicClient, http } from 'viem'
 import { mainnet } from 'viem/chains'
-import { erc20TokenConfig } from './generated/erc20-token'
+import { erc20TokenConfig } from './erc20-token'
 
 // Create a public client
 const client = createPublicClient({

@@ -64,7 +64,7 @@ export class AbiRegistry {
      * Pull ABIs and generate typed contract files
      */
     async pullAndGenerate(options: PullOptions = {}): Promise<GeneratedFile[]> {
-        const outDir = options.outDir || 'generated'
+        const outDir = options.outDir || 'abiregistry'
         const typescript = options.typescript !== false
 
         // Pull ABIs

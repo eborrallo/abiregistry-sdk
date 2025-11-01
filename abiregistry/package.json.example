@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "imports": {
-    "#abiregistry/*": "./abiregistry/generated/*"
+    "#abiregistry/*": "./abiregistry/*"
   },
   "scripts": {
     "sync-abis": "tsx sync-abis.ts"

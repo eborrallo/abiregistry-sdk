@@ -3,7 +3,7 @@
  */
 
 import { ethers } from 'ethers'
-import { erc20TokenAbi, erc20TokenAddress } from './generated/erc20-token'
+import { erc20TokenAbi, erc20TokenAddress } from './erc20-token'
 
 async function main() {
   // Connect to Ethereum mainnet

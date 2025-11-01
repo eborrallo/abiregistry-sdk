@@ -9,7 +9,7 @@ To make imports cleaner, add this alias to your `package.json`:
 ```json
 {
   "imports": {
-    "#abiregistry/*": "./abiregistry/generated/*"
+    "#abiregistry/*": "./abiregistry/*"
   }
 }
 ```
@@ -20,7 +20,7 @@ Or in your `tsconfig.json`:
 {
   "compilerOptions": {
     "paths": {
-      "@abiregistry/*": ["./abiregistry/generated/*"]
+      "@abiregistry/*": ["./abiregistry/*"]
     }
   }
 }
@@ -31,12 +31,12 @@ Then import like:
 ```typescript
 import { erc20TokenConfig } from '@abiregistry/erc20-token'
 // instead of
-import { erc20TokenConfig } from './abiregistry/generated/erc20-token'
+import { erc20TokenConfig } from './abiregistry/erc20-token'
 ```
 
 ## Files
 
-### Generated Files (`generated/`)
+### Generated Files
 
 Example output from `pullAndGenerate()`:
 
@@ -84,10 +84,9 @@ When you run `pullAndGenerate()`, files are organized like:
 
 ```
 abiregistry/
-└── generated/
-    ├── index.ts              # Export all contracts
-    ├── types.ts              # TypeScript types
-    └── erc20-token.ts        # Contract with ABI, address, chainId
+├── index.ts              # Export all contracts
+├── types.ts              # TypeScript types
+└── erc20-token.ts        # Contract with ABI, address, chainId
 ```
 
 ## Type Safety
