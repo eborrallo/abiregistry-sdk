@@ -1,5 +1,5 @@
 export type AbiRegistryConfig = {
-  apiKey: string
+    apiKey: string
 }
 
 export type AbiEntry = {

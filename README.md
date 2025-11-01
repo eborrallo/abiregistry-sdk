@@ -20,15 +20,14 @@ pnpm add @abiregistry/sdk
 # Set your API key (keep this secret!)
 export ABI_REGISTRY_API_KEY="your-api-key"
 
-# Optional: Initialize config file for custom output directory
+# Initialize config file
 npx abiregistry init
-# Edit abiregistry.config.json:
-# {
-#   "outDir": "abiregistry"
-# }
 
-# Push ABIs from a directory
-npx abiregistry push --path ./abis
+# Fetch ABI from Etherscan and push to registry
+npx abiregistry fetch --chain 1 --address 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 --name USDC
+
+# Or add contracts to abiregistry.config.json and run
+npx abiregistry fetch
 
 # Pull ABIs and generate TypeScript files
 npx abiregistry pull
@@ -62,12 +61,14 @@ await client.pullAndGenerate({
 
 ## Features
 
+- 🔍 **Fetch from Etherscan** - Automatically fetch ABIs from verified contracts
 - 🚀 **Push ABIs** - Upload contract ABIs to your registry
 - 📦 **Pull ABIs** - Download all ABIs from your project
 - 🎯 **TypeScript Generation** - Auto-generate typed contract files
 - 📁 **File Organization** - Contracts organized by name with metadata
 - 🔄 **Automatic Versioning** - Track ABI versions across deployments
 - 🔐 **Secure Authentication** - API key-based authentication
+- 🌐 **Multi-chain Support** - Mainnet and Sepolia (more coming soon)
 
 ## Generated Files
 
@@ -131,9 +132,32 @@ npx abiregistry init
 Creates `abiregistry.config.json`:
 ```json
 {
-  "outDir": "abiregistry"
+  "outDir": "abiregistry",
+  "contracts": [
+    {
+      "chain": 1,
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "name": "USDC"
+    }
+  ]
 }
 ```
+
+#### `fetch`
+Fetch ABIs from Etherscan:
+```bash
+# Fetch single contract
+npx abiregistry fetch --chain 1 --address 0xA0b... --name USDC
+
+# Fetch all contracts from config file
+npx abiregistry fetch
+```
+
+Supported chains:
+- `1` - Ethereum Mainnet
+- `11155111` - Sepolia Testnet
+
+**Note:** Etherscan API works without a key but has rate limits. Set `ETHERSCAN_API_KEY` for higher limits.
 
 #### `push`
 Push ABIs to the registry:
@@ -179,7 +203,14 @@ export ABI_REGISTRY_API_KEY="your-api-key"  # KEEP SECRET!
 **Config File (Optional):**
 ```json
 {
-  "outDir": "abiregistry"  // Customize output directory
+  "outDir": "abiregistry",
+  "contracts": [
+    {
+      "chain": 1,
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "name": "USDC"
+    }
+  ]
 }
 ```
 

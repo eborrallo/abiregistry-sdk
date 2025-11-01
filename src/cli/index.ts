@@ -3,6 +3,7 @@
 import { loadConfig, validateConfig, createConfigFile } from './config'
 import { pushCommand } from './push'
 import { pullCommand } from './pull'
+import { fetchCommand } from './fetch'
 
 const args = process.argv.slice(2)
 
@@ -16,6 +17,7 @@ Usage:
 Commands:
   push                Push ABIs from local files to the registry
   pull                Pull ABIs from the registry and generate files
+  fetch               Fetch ABIs from Etherscan and push to registry
   init                Create a config file (abiregistry.config.json)
   help                Show this help message
 
@@ -25,6 +27,13 @@ Push Options:
 Pull Options:
   --out <dir>         Output directory (default: abiregistry)
   --js                Generate JavaScript instead of TypeScript
+
+Fetch Options:
+  --chain <id>        Chain ID (1=mainnet, 11155111=sepolia)
+  --address <addr>    Contract address
+  --name <name>       Contract name
+  
+  Or use contracts array in abiregistry.config.json
 
 Configuration:
   You can create a config file to avoid passing options every time:
@@ -39,20 +48,20 @@ Configuration:
   Optional settings (outDir) can be in abiregistry.config.json
 
 Examples:
-  # Push ABIs from a directory
-  npx abiregistry push --path ./abis
+  # Fetch ABI from Etherscan and push to registry
+  npx abiregistry fetch --chain 1 --address 0xA0b... --name USDC
 
-  # Push a single ABI file
-  npx abiregistry push --path ./MyContract.json
+  # Fetch all contracts from config file
+  npx abiregistry fetch
+
+  # Push ABIs from local files
+  npx abiregistry push --path ./abis
 
   # Pull ABIs and generate TypeScript files
   npx abiregistry pull
 
   # Pull ABIs and generate JavaScript files
   npx abiregistry pull --js
-
-  # Pull ABIs to custom directory
-  npx abiregistry pull --out ./contracts
 `)
 }
 
@@ -92,10 +101,10 @@ async function main() {
         return
     }
 
-  // Load config from file and env
-  const config = loadConfig({
-    outDir: typeof options.out === 'string' ? options.out : undefined,
-  })
+    // Load config from file and env
+    const config = loadConfig({
+        outDir: typeof options.out === 'string' ? options.out : undefined,
+    })
 
     // Validate config
     const validation = validateConfig(config)
@@ -110,27 +119,39 @@ async function main() {
         if (command === 'push') {
             const abiPath = typeof options.path === 'string' ? options.path : ''
 
-      if (!abiPath) {
-        console.error('❌ Error: --path is required for push command')
-        console.error('Usage: npx abiregistry push --path <path>')
-        process.exit(1)
-      }
+            if (!abiPath) {
+                console.error('❌ Error: --path is required for push command')
+                console.error('Usage: npx abiregistry push --path <path>')
+                process.exit(1)
+            }
 
-      await pushCommand({
-        apiKey: config.apiKey!,
-        abiPath,
-      })
+            await pushCommand({
+                apiKey: config.apiKey!,
+                abiPath,
+            })
     } else if (command === 'pull') {
       await pullCommand({
         apiKey: config.apiKey!,
         outDir: config.outDir,
         typescript: options.js !== true, // --js flag disables TypeScript
       })
-        } else {
-            console.error(`❌ Unknown command: ${command}`)
-            console.error('Run "npx abiregistry help" for usage information')
-            process.exit(1)
-        }
+    } else if (command === 'fetch') {
+      const chain = typeof options.chain === 'string' ? parseInt(options.chain, 10) : undefined
+      const address = typeof options.address === 'string' ? options.address : undefined
+      const name = typeof options.name === 'string' ? options.name : undefined
+
+      await fetchCommand({
+        apiKey: config.apiKey!,
+        contracts: config.contracts,
+        chain,
+        address,
+        name,
+      })
+    } else {
+      console.error(`❌ Unknown command: ${command}`)
+      console.error('Run "npx abiregistry help" for usage information')
+      process.exit(1)
+    }
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         console.error(`❌ Error: ${message}`)
