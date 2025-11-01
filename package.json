@@ -45,13 +45,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/abiregistry-sdk.git"
+    "url": "git+https://github.com/eborrallo/abiregistry-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/abiregistry-sdk/issues"
+    "url": "https://github.com/eborrallo/abiregistry-sdk/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/abiregistry-sdk#readme",
-  "author": "Your Name <your.email@example.com>",
+  "homepage": "https://github.com/eborrallo/abiregistry-sdk#readme",
+  "author": "ABI Registry",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",
