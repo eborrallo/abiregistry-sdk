@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build
+*.js
+*.mjs
+*.d.ts
+
+# Keep TypeScript source
+!*.ts
+
+# Keep generated examples
+!generated/*.ts
+
