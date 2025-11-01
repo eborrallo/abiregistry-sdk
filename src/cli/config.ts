@@ -2,15 +2,15 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 export type ContractConfig = {
-  chain: number
-  address: string
-  name: string
+    chain: number
+    address: string
+    name: string
 }
 
 export type AbiRegistryCliConfig = {
-  apiKey?: string
-  outDir?: string
-  contracts?: ContractConfig[]
+    apiKey?: string
+    outDir?: string
+    contracts?: ContractConfig[]
 }
 
 const CONFIG_FILE_NAME = 'abiregistry.config.json'
@@ -86,20 +86,20 @@ export function createConfigFile(): void {
         process.exit(1)
     }
 
-  const sampleConfig: AbiRegistryCliConfig = {
-    outDir: 'abiregistry',
-    contracts: [
-      {
-        chain: 1,
-        address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        name: 'USDC',
-      },
-    ],
-  }
+    const sampleConfig: AbiRegistryCliConfig = {
+        outDir: 'abiregistry',
+        contracts: [
+            {
+                chain: 1,
+                address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                name: 'USDC',
+            },
+        ],
+    }
 
-  fs.writeFileSync(configPath, JSON.stringify(sampleConfig, null, 2), 'utf-8')
-  console.log(`✅ Created ${CONFIG_FILE_NAME}`)
-  console.log('⚠️  Remember to set your API key via ABI_REGISTRY_API_KEY environment variable')
-  console.log('💡 Add contracts to fetch from Etherscan in the "contracts" array')
+    fs.writeFileSync(configPath, JSON.stringify(sampleConfig, null, 2), 'utf-8')
+    console.log(`✅ Created ${CONFIG_FILE_NAME}`)
+    console.log('⚠️  Remember to set your API key via ABI_REGISTRY_API_KEY environment variable')
+    console.log('💡 Add contracts to fetch from Etherscan in the "contracts" array')
 }
 

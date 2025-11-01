@@ -129,29 +129,29 @@ async function main() {
                 apiKey: config.apiKey!,
                 abiPath,
             })
-    } else if (command === 'pull') {
-      await pullCommand({
-        apiKey: config.apiKey!,
-        outDir: config.outDir,
-        typescript: options.js !== true, // --js flag disables TypeScript
-      })
-    } else if (command === 'fetch') {
-      const chain = typeof options.chain === 'string' ? parseInt(options.chain, 10) : undefined
-      const address = typeof options.address === 'string' ? options.address : undefined
-      const name = typeof options.name === 'string' ? options.name : undefined
+        } else if (command === 'pull') {
+            await pullCommand({
+                apiKey: config.apiKey!,
+                outDir: config.outDir,
+                typescript: options.js !== true, // --js flag disables TypeScript
+            })
+        } else if (command === 'fetch') {
+            const chain = typeof options.chain === 'string' ? parseInt(options.chain, 10) : undefined
+            const address = typeof options.address === 'string' ? options.address : undefined
+            const name = typeof options.name === 'string' ? options.name : undefined
 
-      await fetchCommand({
-        apiKey: config.apiKey!,
-        contracts: config.contracts,
-        chain,
-        address,
-        name,
-      })
-    } else {
-      console.error(`❌ Unknown command: ${command}`)
-      console.error('Run "npx abiregistry help" for usage information')
-      process.exit(1)
-    }
+            await fetchCommand({
+                apiKey: config.apiKey!,
+                contracts: config.contracts,
+                chain,
+                address,
+                name,
+            })
+        } else {
+            console.error(`❌ Unknown command: ${command}`)
+            console.error('Run "npx abiregistry help" for usage information')
+            process.exit(1)
+        }
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         console.error(`❌ Error: ${message}`)
