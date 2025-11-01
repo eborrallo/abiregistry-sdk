@@ -81,7 +81,7 @@ export class AbiRegistry {
 
         // Write files to disk
         const fullOutDir = path.resolve(process.cwd(), outDir)
-        
+
         // Create output directory
         if (!fs.existsSync(fullOutDir)) {
             fs.mkdirSync(fullOutDir, { recursive: true })
@@ -94,7 +94,7 @@ export class AbiRegistry {
         }
 
         console.log(`✅ Generated ${files.length} files in ${outDir}/`)
-        
+
         return files
     }
 

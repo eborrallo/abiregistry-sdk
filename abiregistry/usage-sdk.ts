@@ -15,7 +15,7 @@ async function main() {
 
   // Pull all ABIs and generate typed files
   const files = await client.pullAndGenerate({
-    outDir: './generated',
+    outDir: './abiregistry/generated',
     typescript: true,
   })
 

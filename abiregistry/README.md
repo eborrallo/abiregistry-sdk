@@ -2,6 +2,38 @@
 
 This directory contains example usage of the ABI Registry SDK.
 
+## Setup Import Alias (Recommended)
+
+To make imports cleaner, add this alias to your `package.json`:
+
+```json
+{
+  "imports": {
+    "#abiregistry/*": "./abiregistry/generated/*"
+  }
+}
+```
+
+Or in your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@abiregistry/*": ["./abiregistry/generated/*"]
+    }
+  }
+}
+```
+
+Then import like:
+
+```typescript
+import { erc20TokenConfig } from '@abiregistry/erc20-token'
+// instead of
+import { erc20TokenConfig } from './abiregistry/generated/erc20-token'
+```
+
 ## Files
 
 ### Generated Files (`generated/`)
@@ -51,10 +83,11 @@ npx tsx usage-ethers.ts
 When you run `pullAndGenerate()`, files are organized like:
 
 ```
-generated/
-├── index.ts              # Export all contracts
-├── types.ts              # TypeScript types
-└── erc20-token.ts        # Contract with ABI, address, chainId
+abiregistry/
+└── generated/
+    ├── index.ts              # Export all contracts
+    ├── types.ts              # TypeScript types
+    └── erc20-token.ts        # Contract with ABI, address, chainId
 ```
 
 ## Type Safety
