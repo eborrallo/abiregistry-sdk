@@ -42,8 +42,17 @@ export type AbiItem = {
   abi: AbiEntry[]
 }
 
+export type PullOptions = {
+  outDir?: string
+  typescript?: boolean
+}
+
+export type GeneratedFile = {
+  path: string
+  content: string
+}
+
 export type ApiResponse<T> = {
   project?: T
   error?: string
 }
-

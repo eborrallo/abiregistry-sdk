@@ -1,3 +1,4 @@
 export { AbiRegistry } from './client'
-export type { AbiRegistryConfig, PushAbiInput, AbiItem } from './types'
+export { CodeGenerator } from './generator'
+export type { AbiRegistryConfig, PushAbiInput, AbiItem, PullOptions, GeneratedFile } from './types'
 
