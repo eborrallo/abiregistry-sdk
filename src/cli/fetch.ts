@@ -1,10 +1,11 @@
-import { AbiRegistry } from '../client'
-import type { AbiEntry } from '../types'
 import { fetchAbiFromEtherscan, getChainName } from './etherscan'
+import { CodeGenerator } from '../generator'
 import type { ContractConfig } from './config'
+import type { AbiItem } from '../types'
 
 type FetchOptions = {
-  apiKey: string
+  outDir?: string
+  js?: boolean
   contracts?: ContractConfig[]
   chain?: number
   address?: string
@@ -12,7 +13,7 @@ type FetchOptions = {
 }
 
 export async function fetchCommand(options: FetchOptions): Promise<void> {
-  const { apiKey, contracts, chain, address, name } = options
+  const { outDir = 'abiregistry', js = false, contracts, chain, address, name } = options
 
   let contractsToFetch: ContractConfig[] = []
 
@@ -32,11 +33,7 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
 
   console.log(`📦 Fetching ${contractsToFetch.length} contract(s) from Etherscan...`)
 
-  // Initialize client
-  const client = new AbiRegistry({
-    apiKey,
-  })
-
+  const abiItems: AbiItem[] = []
   let successCount = 0
   let errorCount = 0
 
@@ -53,17 +50,18 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
         continue
       }
 
-      // Push to registry
-      await client.push({
-        contractName: contract.name,
-        address: contract.address,
-        chainId: contract.chain,
+      // Create ABI item for generation
+      abiItems.push({
+        id: `${contract.chain}-${contract.address}`,
+        contract: contract.name,
         network: getChainName(contract.chain),
         version: '1.0.0',
-        abi: abi as AbiEntry[],
+        chainId: contract.chain,
+        address: contract.address,
+        abi,
       })
 
-      console.log(`✅ Successfully fetched and pushed ${contract.name}`)
+      console.log(`✅ Successfully fetched ${contract.name}`)
       successCount++
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
@@ -72,7 +70,30 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
     }
   }
 
+  // Generate files locally
+  if (abiItems.length > 0) {
+    console.log(`\n📝 Generating ${js ? 'JavaScript' : 'TypeScript'} files in ./${outDir}...`)
+    
+    const generator = new CodeGenerator({ typescript: !js })
+    const generatedFiles = generator.generate(abiItems)
+    
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    
+    // Create output directory
+    await fs.mkdir(outDir, { recursive: true })
+    
+    // Write all generated files
+    for (const file of generatedFiles) {
+      const filePath = path.join(outDir, file.filename)
+      await fs.writeFile(filePath, file.content, 'utf-8')
+      console.log(`  ✓ ${file.filename}`)
+    }
+  }
+
   console.log(`\n📊 Results: ${successCount} succeeded, ${errorCount} failed`)
+  console.log(`💡 Files generated in ./${outDir}/ - ready to use!`)
+  console.log(`💡 To push these ABIs to the registry, use: npx abiregistry push --path ./${outDir}`)
 
   if (errorCount > 0) {
     process.exit(1)
