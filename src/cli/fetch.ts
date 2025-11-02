@@ -3,7 +3,7 @@ import * as fs from 'fs/promises'
 import { fetchAbiFromEtherscan, getChainName } from './etherscan'
 import { CodeGenerator } from '../generator'
 import type { ContractConfig } from './config'
-import type { AbiItem } from '../types'
+import type { AbiEntry, AbiItem } from '../types'
 
 type FetchOptions = {
   outDir?: string
@@ -44,7 +44,7 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
       console.log(`\n🔍 Fetching ${contract.name} from chain ${contract.chain}...`)
 
       // Fetch ABI from Etherscan
-      const abi = await fetchAbiFromEtherscan(contract.chain, contract.address)
+      const abi = await fetchAbiFromEtherscan(contract.chain, contract.address) as AbiEntry[]
 
       if (!Array.isArray(abi) || abi.length === 0) {
         console.warn(`⚠️  Warning: No ABI found for ${contract.name}`)
@@ -75,7 +75,7 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
   // Generate files locally
   if (abiItems.length > 0) {
     console.log(`\n📝 Generating ${js ? 'JavaScript' : 'TypeScript'} files in ./${outDir}...`)
-    
+
     const generator = new CodeGenerator(!js) // Pass boolean for typescript
     const generatedFiles = generator.generateFiles(abiItems)
 

@@ -53,9 +53,9 @@ export class CodeGenerator {
         return `/**
  * ${abi.contract}
  * Network: ${abi.network}
+ * Chain ID: ${abi.chainId}
  * Address: ${abi.address}
  * Version: ${abi.version}
- * Synced: ${abi.syncedAt}
  */
 
 export const ${this.sanitizeVariableName(abi.contract)}Abi = ${JSON.stringify(abi.abi, null, 2)} as const
@@ -79,9 +79,9 @@ export const ${this.sanitizeVariableName(abi.contract)}Config = {
         return `/**
  * ${abi.contract}
  * Network: ${abi.network}
+ * Chain ID: ${abi.chainId}
  * Address: ${abi.address}
  * Version: ${abi.version}
- * Synced: ${abi.syncedAt}
  */
 
 export const ${this.sanitizeVariableName(abi.contract)}Abi = ${JSON.stringify(abi.abi, null, 2)}
@@ -158,7 +158,7 @@ ${abis.map((abi) => {
     private sanitizeFileName(name: string): string {
         // Insert hyphens before capital letters (camelCase/PascalCase to kebab-case)
         const withHyphens = name.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-        
+
         return withHyphens
             .replace(/[^a-zA-Z0-9-]/g, '-')
             .replace(/-+/g, '-')
@@ -174,7 +174,7 @@ ${abis.map((abi) => {
         const withSpaces = name
             .replace(/([a-z0-9])([A-Z])/g, '$1 $2') // Add space before capitals
             .replace(/[^a-zA-Z0-9]/g, ' ') // Replace special chars with spaces
-        
+
         const words = withSpaces.split(' ').filter(Boolean)
 
         if (words.length === 0) return 'contract'

@@ -34,8 +34,7 @@ export type AbiItem = {
     contract: string
     network: string
     version: string
-    syncedAt: string
-    status: 'synced' | 'pending' | 'outdated'
+    chainId: number
     address: string
     abi: AbiEntry[]
 }
