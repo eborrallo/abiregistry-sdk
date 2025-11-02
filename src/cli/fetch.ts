@@ -1,3 +1,5 @@
+import * as path from 'path'
+import * as fs from 'fs/promises'
 import { fetchAbiFromEtherscan, getChainName } from './etherscan'
 import { CodeGenerator } from '../generator'
 import type { ContractConfig } from './config'
@@ -74,20 +76,17 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
   if (abiItems.length > 0) {
     console.log(`\n📝 Generating ${js ? 'JavaScript' : 'TypeScript'} files in ./${outDir}...`)
     
-    const generator = new CodeGenerator({ typescript: !js })
-    const generatedFiles = generator.generate(abiItems)
-    
-    const fs = await import('fs/promises')
-    const path = await import('path')
-    
+    const generator = new CodeGenerator(!js) // Pass boolean for typescript
+    const generatedFiles = generator.generateFiles(abiItems)
+
     // Create output directory
     await fs.mkdir(outDir, { recursive: true })
-    
+
     // Write all generated files
     for (const file of generatedFiles) {
-      const filePath = path.join(outDir, file.filename)
+      const filePath = path.join(outDir, file.path)
       await fs.writeFile(filePath, file.content, 'utf-8')
-      console.log(`  ✓ ${file.filename}`)
+      console.log(`  ✓ ${file.path}`)
     }
   }
 
