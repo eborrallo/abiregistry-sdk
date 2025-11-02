@@ -1,0 +1,7 @@
+# ABI Registry API Key (required, keep this secret!)
+# This is the ONLY configuration needed as an environment variable
+ABI_REGISTRY_API_KEY=your-api-key-here
+
+# Optional: Etherscan API Key (for faster rate limits when fetching ABIs)
+# Get your key at https://etherscan.io/myapikey
+ETHERSCAN_API_KEY=SIP5PGZIJXRT6PPVX29UBQJ45JFWRQJQXI

@@ -1,16 +1,41 @@
 type EtherscanConfig = {
-  apiUrl: string
-  apiKey?: string
+  chainId: number
+  name: string
 }
 
-const ETHERSCAN_CONFIGS: Record<number, EtherscanConfig> = {
+// Etherscan API V2 - unified endpoint for all chains
+// https://docs.etherscan.io/v2-migration
+const ETHERSCAN_V2_BASE_URL = 'https://api.etherscan.io/v2/api'
+
+const SUPPORTED_CHAINS: Record<number, EtherscanConfig> = {
   1: {
-    apiUrl: 'https://api.etherscan.io/api',
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    chainId: 1,
+    name: 'mainnet',
   },
   11155111: {
-    apiUrl: 'https://api-sepolia.etherscan.io/api',
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    chainId: 11155111,
+    name: 'sepolia',
+  },
+  // More chains can be added - V2 supports 60+ networks
+  56: {
+    chainId: 56,
+    name: 'bsc',
+  },
+  137: {
+    chainId: 137,
+    name: 'polygon',
+  },
+  42161: {
+    chainId: 42161,
+    name: 'arbitrum',
+  },
+  10: {
+    chainId: 10,
+    name: 'optimism',
+  },
+  8453: {
+    chainId: 8453,
+    name: 'base',
   },
 }
 
@@ -21,26 +46,35 @@ type EtherscanAbiResponse = {
 }
 
 export async function fetchAbiFromEtherscan(chainId: number, address: string): Promise<unknown[]> {
-  const config = ETHERSCAN_CONFIGS[chainId]
+  const config = SUPPORTED_CHAINS[chainId]
 
   if (!config) {
-    throw new Error(`Unsupported chain ID: ${chainId}. Supported: 1 (mainnet), 11155111 (sepolia)`)
+    const supportedChainIds = Object.keys(SUPPORTED_CHAINS).join(', ')
+    throw new Error(
+      `Unsupported chain ID: ${chainId}. Supported chains: ${supportedChainIds}\n` +
+      `See https://docs.etherscan.io/getting-started/supported-chains for all available chains.`
+    )
   }
 
-  // Etherscan API works without key but has rate limits
+  // Etherscan API V2 - unified endpoint with chainid parameter
+  // https://docs.etherscan.io/v2-migration
   const params = new URLSearchParams({
+    chainid: String(chainId), // V2 requires chainid parameter
     module: 'contract',
     action: 'getabi',
     address,
   })
 
-  if (config.apiKey) {
-    params.set('apikey', config.apiKey)
+  // Add API key if available (optional but recommended for higher rate limits)
+  const apiKey = process.env.ETHERSCAN_API_KEY
+  if (apiKey) {
+    params.set('apikey', apiKey)
   }
 
-  const url = `${config.apiUrl}?${params.toString()}`
+  const url = `${ETHERSCAN_V2_BASE_URL}?${params.toString()}`
 
   try {
+    console.log(`Fetching ABI from Etherscan V2 (${config.name})...`)
     const response = await fetch(url)
 
     if (!response.ok) {
@@ -50,6 +84,13 @@ export async function fetchAbiFromEtherscan(chainId: number, address: string): P
     const data = (await response.json()) as EtherscanAbiResponse
 
     if (data.status !== '1') {
+      // Check for V1 deprecation error
+      if (data.message?.includes('deprecated V1 endpoint')) {
+        throw new Error(
+          'Etherscan API V1 is deprecated. Please update to V2.\n' +
+          'See https://docs.etherscan.io/v2-migration for details.'
+        )
+      }
       throw new Error(data.message || 'Failed to fetch ABI from Etherscan')
     }
 
@@ -73,10 +114,7 @@ export async function fetchAbiFromEtherscan(chainId: number, address: string): P
 }
 
 export function getChainName(chainId: number): string {
-  const names: Record<number, string> = {
-    1: 'mainnet',
-    11155111: 'sepolia',
-  }
-  return names[chainId] || String(chainId)
+  const config = SUPPORTED_CHAINS[chainId]
+  return config?.name || String(chainId)
 }
 

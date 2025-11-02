@@ -36,8 +36,12 @@ describe('Etherscan Integration', () => {
 
       const abi = await fetchAbiFromEtherscan(1, '0x1234567890123456789012345678901234567890')
 
+      // V2 API uses unified endpoint with chainid parameter
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('https://api.etherscan.io/api')
+        expect.stringContaining('https://api.etherscan.io/v2/api')
+      )
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('chainid=1')
       )
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('module=contract')
@@ -63,8 +67,12 @@ describe('Etherscan Integration', () => {
 
       const abi = await fetchAbiFromEtherscan(11155111, '0x1234567890123456789012345678901234567890')
 
+      // V2 API uses unified endpoint with chainid parameter for all chains
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('https://api-sepolia.etherscan.io/api')
+        expect.stringContaining('https://api.etherscan.io/v2/api')
+      )
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('chainid=11155111')
       )
       expect(abi).toEqual(mockAbi)
     })

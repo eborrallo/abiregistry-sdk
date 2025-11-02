@@ -216,11 +216,16 @@ describe('Fetch Command', () => {
     it('should map chain IDs to network names', () => {
       expect(getChainName(1)).toBe('mainnet')
       expect(getChainName(11155111)).toBe('sepolia')
+      expect(getChainName(137)).toBe('polygon')
+      expect(getChainName(42161)).toBe('arbitrum')
+      expect(getChainName(56)).toBe('bsc')
+      expect(getChainName(10)).toBe('optimism')
+      expect(getChainName(8453)).toBe('base')
     })
 
     it('should return string chain ID for unmapped chains', () => {
-      expect(getChainName(137)).toBe('137')
-      expect(getChainName(42161)).toBe('42161')
+      expect(getChainName(999999)).toBe('999999')
+      expect(getChainName(12345)).toBe('12345')
     })
   })
 })

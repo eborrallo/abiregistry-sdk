@@ -40,3 +40,4 @@ abiregistry.config.json
 # Test artifacts
 test-abis/
 
+packages/
