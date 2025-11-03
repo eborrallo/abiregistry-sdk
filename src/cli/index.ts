@@ -4,6 +4,7 @@ import { loadConfig, validateConfig, createConfigFile } from './config'
 import { pushCommand } from './push'
 import { pullCommand } from './pull'
 import { fetchCommand } from './fetch'
+import { foundryPushCommand } from './foundry'
 
 const args = process.argv.slice(2)
 
@@ -18,6 +19,7 @@ Commands:
   fetch               Fetch ABIs from Etherscan and generate files locally (NO API key needed)
   pull                Pull ABIs from registry and generate files (API key required)
   push                Push local ABI files to the registry (API key required)
+  foundry             Push Foundry deployment artifacts from broadcast folder (API key required)
   init                Create a config file (abiregistry.config.json)
   help                Show this help message
 
@@ -37,6 +39,11 @@ Pull Options (Registry → Local files):
 
 Push Options (Local files → Registry):
   --path <path>       Path to ABI file or directory (required)
+
+Foundry Options (Broadcast → Registry):
+  --script <dir>      Script directory name in broadcast/ (required, e.g., "DeployScript.s.sol")
+  --file <name>       Broadcast filename (default: run-latest.json)
+  --version <ver>     Version tag for the ABIs (default: 1.0.0)
 
 Configuration:
   You can create a config file to avoid passing options every time:
@@ -65,6 +72,10 @@ Examples:
 
   # Push local ABI files to the registry (API key required)
   npx abiregistry push --path ./abis/MyContract.json
+
+  # Push Foundry deployment artifacts (API key required)
+  npx abiregistry foundry --script DeployScript.s.sol
+  npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json --version 2.0.0
 `)
 }
 
@@ -149,6 +160,24 @@ async function main() {
                 await pushCommand({
                     apiKey: config.apiKey!,
                     abiPath,
+                })
+            } else if (command === 'foundry') {
+                const scriptDir = typeof options.script === 'string' ? options.script : ''
+                const filename = typeof options.file === 'string' ? options.file : undefined
+                const version = typeof options.version === 'string' ? options.version : undefined
+
+                if (!scriptDir) {
+                    console.error('❌ Error: --script is required for foundry command')
+                    console.error('Usage: npx abiregistry foundry --script <script-dir>')
+                    console.error('\nExample: npx abiregistry foundry --script DeployScript.s.sol')
+                    process.exit(1)
+                }
+
+                await foundryPushCommand({
+                    apiKey: config.apiKey!,
+                    scriptDir,
+                    filename,
+                    version,
                 })
             } else if (command === 'pull') {
                 await pullCommand({
