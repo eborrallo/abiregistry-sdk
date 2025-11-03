@@ -102,7 +102,7 @@ describe('AbiRegistry Client', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const abis = await client.pull()
@@ -167,7 +167,7 @@ describe('AbiRegistry Client', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const abi = await client.getAbi('abi-2')
@@ -212,7 +212,7 @@ describe('AbiRegistry Client', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const abis = await client.getByNetwork('mainnet')
@@ -236,7 +236,7 @@ describe('AbiRegistry Client', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const abis = await client.getByNetwork('MAINNET')
@@ -271,7 +271,7 @@ describe('AbiRegistry Client', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const abis = await client.getByAddress('0x1111111111111111111111111111111111111111')
@@ -295,7 +295,7 @@ describe('AbiRegistry Client', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const abis = await client.getByAddress('0X1111111111111111111111111111111111111111')

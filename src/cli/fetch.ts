@@ -1,6 +1,6 @@
 import * as path from 'path'
 import * as fs from 'fs/promises'
-import { fetchAbiFromEtherscan, getChainName } from './etherscan'
+import { fetchAbiWithProxyDetection, getChainName } from './etherscan'
 import { CodeGenerator } from '../generator'
 import type { ContractConfig } from './config'
 import type { AbiEntry, AbiItem } from '../types'
@@ -12,16 +12,17 @@ type FetchOptions = {
   chain?: number
   address?: string
   name?: string
+  isProxy?: boolean
 }
 
 export async function fetchCommand(options: FetchOptions): Promise<void> {
-  const { outDir = 'abiregistry', js = false, contracts, chain, address, name } = options
+  const { outDir = 'abiregistry', js = false, contracts, chain, address, name, isProxy } = options
 
   let contractsToFetch: ContractConfig[] = []
 
   // If CLI args provided, use them
   if (chain && address && name) {
-    contractsToFetch = [{ chain, address, name }]
+    contractsToFetch = [{ chain, address, name, isProxy }]
   } else if (contracts && contracts.length > 0) {
     // Use contracts from config file
     contractsToFetch = contracts
@@ -42,9 +43,17 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
   for (const contract of contractsToFetch) {
     try {
       console.log(`\n🔍 Fetching ${contract.name} from chain ${contract.chain}...`)
+      
+      if (contract.isProxy) {
+        console.log(`📦 Contract is a proxy, will fetch implementation ABI`)
+      }
 
-      // Fetch ABI from Etherscan
-      const abi = await fetchAbiFromEtherscan(contract.chain, contract.address) as AbiEntry[]
+      // Fetch ABI from Etherscan (with proxy detection)
+      const abi = await fetchAbiWithProxyDetection(
+        contract.chain, 
+        contract.address,
+        contract.isProxy
+      ) as AbiEntry[]
 
       if (!Array.isArray(abi) || abi.length === 0) {
         console.warn(`⚠️  Warning: No ABI found for ${contract.name}`)

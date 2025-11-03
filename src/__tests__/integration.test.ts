@@ -40,7 +40,7 @@ describe('Integration Tests', () => {
       // Mock push response
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: {} }),
+        json: async () => ({}),
       })
 
       await client.push(pushInput)
@@ -59,7 +59,7 @@ describe('Integration Tests', () => {
 
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: [mockPulledAbi] } }),
+        json: async () => ({ abis: [mockPulledAbi] }),
       })
 
       const pulledAbis = await client.pull()
@@ -107,7 +107,7 @@ describe('Integration Tests', () => {
     it('should filter by network and then by address', async () => {
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const mainnetAbis = await client.getByNetwork('mainnet')
@@ -121,7 +121,7 @@ describe('Integration Tests', () => {
     it('should handle empty results gracefully', async () => {
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
-        json: async () => ({ project: { abis: mockAbis } }),
+        json: async () => ({ abis: mockAbis }),
       })
 
       const nonExistentNetwork = await client.getByNetwork('nonexistent')
@@ -173,7 +173,7 @@ describe('Integration Tests', () => {
     it('should include API key in all requests', async () => {
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: { abis: [] } }),
+        json: async () => ({ abis: [] }),
       })
 
       await client.pull()
@@ -191,7 +191,7 @@ describe('Integration Tests', () => {
     it('should use correct project ID in API paths', async () => {
       ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ project: {} }),
+        json: async () => ({}),
       })
 
       await client.push({

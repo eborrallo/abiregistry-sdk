@@ -57,7 +57,7 @@ describe('pullAndGenerate', () => {
   it('should pull ABIs and generate files', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     const files = await client.pullAndGenerate({
@@ -74,7 +74,7 @@ describe('pullAndGenerate', () => {
 
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     await client.pullAndGenerate({
@@ -93,7 +93,7 @@ describe('pullAndGenerate', () => {
 
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     await client.pullAndGenerate({
@@ -107,7 +107,7 @@ describe('pullAndGenerate', () => {
   it('should use default outDir if not provided', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     await client.pullAndGenerate()
@@ -121,7 +121,7 @@ describe('pullAndGenerate', () => {
   it('should generate TypeScript files by default', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     const files = await client.pullAndGenerate()
@@ -133,7 +133,7 @@ describe('pullAndGenerate', () => {
   it('should generate JavaScript files when typescript is false', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     const files = await client.pullAndGenerate({ typescript: false })
@@ -145,7 +145,7 @@ describe('pullAndGenerate', () => {
   it('should return empty array if no ABIs found', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: [] } }),
+      json: async () => ({ abis: [] }),
     })
 
     const files = await client.pullAndGenerate()
@@ -157,7 +157,7 @@ describe('pullAndGenerate', () => {
   it('should write files with correct content', async () => {
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: mockAbis } }),
+      json: async () => ({ abis: mockAbis }),
     })
 
     const files = await client.pullAndGenerate({
@@ -194,7 +194,7 @@ describe('pullAndGenerate', () => {
 
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ project: { abis: multipleAbis } }),
+      json: async () => ({ abis: multipleAbis }),
     })
 
     const files = await client.pullAndGenerate()

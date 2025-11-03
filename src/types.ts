@@ -49,7 +49,6 @@ export type GeneratedFile = {
     content: string
 }
 
-export type ApiResponse<T> = {
-    project?: T
+export type ApiResponse<T> = T & {
     error?: string
 }

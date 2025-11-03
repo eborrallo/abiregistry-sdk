@@ -118,3 +118,90 @@ export function getChainName(chainId: number): string {
   return config?.name || String(chainId)
 }
 
+/**
+ * Get implementation address for a proxy contract
+ * Supports EIP-1967 (most common) and EIP-1822 (UUPS) proxies
+ */
+export async function getProxyImplementation(chainId: number, proxyAddress: string): Promise<string | null> {
+  const config = SUPPORTED_CHAINS[chainId]
+
+  if (!config) {
+    throw new Error(`Unsupported chain ID: ${chainId}`)
+  }
+
+  // EIP-1967 implementation slot: keccak256("eip1967.proxy.implementation") - 1
+  // = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
+  const params = new URLSearchParams({
+    chainid: String(chainId),
+    module: 'proxy',
+    action: 'eth_getStorageAt',
+    address: proxyAddress,
+    position: '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc',
+    tag: 'latest',
+  })
+
+  const apiKey = process.env.ETHERSCAN_API_KEY
+  if (apiKey) {
+    params.set('apikey', apiKey)
+  }
+
+  const url = `${ETHERSCAN_V2_BASE_URL}?${params.toString()}`
+
+  try {
+    console.log(`Checking if ${proxyAddress} is a proxy contract...`)
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json() as EtherscanAbiResponse
+
+    if (data.status !== '1' || typeof data.result !== 'string') {
+      return null
+    }
+
+    // Result is a hex string, convert to address
+    const implementationHex = data.result
+    
+    if (!implementationHex || implementationHex === '0x' || implementationHex === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+      return null
+    }
+
+    // Extract address from storage slot (last 40 hex chars)
+    const implementationAddress = '0x' + implementationHex.slice(-40)
+    
+    console.log(`✓ Proxy detected! Implementation: ${implementationAddress}`)
+    return implementationAddress
+  } catch (error) {
+    console.debug('Failed to check proxy implementation:', error)
+    return null
+  }
+}
+
+/**
+ * Fetch ABI for a contract, handling proxy detection
+ */
+export async function fetchAbiWithProxyDetection(
+  chainId: number,
+  address: string,
+  isProxy?: boolean
+): Promise<unknown[]> {
+  let targetAddress = address
+
+  // If explicitly marked as proxy, get implementation
+  if (isProxy) {
+    console.log(`Contract marked as proxy, fetching implementation...`)
+    const implementation = await getProxyImplementation(chainId, address)
+    
+    if (!implementation) {
+      throw new Error(`Failed to get implementation address for proxy ${address}`)
+    }
+    
+    targetAddress = implementation
+  }
+
+  // Fetch the ABI
+  return fetchAbiFromEtherscan(chainId, targetAddress)
+}
+

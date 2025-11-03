@@ -4,12 +4,21 @@
     {
       "chain": 1,
       "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-      "name": "USDC"
+      "name": "USDC",
+      "isProxy": false
     },
     {
       "chain": 11155111,
       "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-      "name": "SepoliaUSDC"
+      "name": "SepoliaUSDC",
+      "isProxy": false
+    },
+    {
+      "_comment": "Example proxy contract - will fetch implementation ABI",
+      "chain": 1,
+      "address": "0x1234567890123456789012345678901234567890",
+      "name": "MyUpgradeableToken",
+      "isProxy": true
     }
   ]
 }

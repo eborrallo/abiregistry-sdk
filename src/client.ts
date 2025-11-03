@@ -54,7 +54,7 @@ export class AbiRegistry {
         }
 
         const data = await response.json() as ApiResponse<{ abis: AbiItem[] }>
-        return data.project?.abis || []
+        return data.abis || []
     }
 
     /**

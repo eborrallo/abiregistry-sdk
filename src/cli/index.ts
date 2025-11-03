@@ -23,12 +23,13 @@ Commands:
 
 Fetch Options (Etherscan → Local files):
   --chain <id>        Chain ID (1=mainnet, 11155111=sepolia, 137=polygon, etc.)
-  --address <addr>    Contract address
+  --address <addr>    Contract address (proxy or implementation)
   --name <name>       Contract name
+  --proxy             If set, fetch implementation ABI for proxy contracts
   --out <dir>         Output directory (default: abiregistry)
   --js                Generate JavaScript instead of TypeScript
   
-  Or use contracts array in abiregistry.config.json
+  Or use contracts array in abiregistry.config.json with isProxy: true
 
 Pull Options (Registry → Local files):
   --out <dir>         Output directory (default: abiregistry)
@@ -52,6 +53,9 @@ Configuration:
 Examples:
   # Fetch ABI from Etherscan and generate local files (NO API key needed)
   npx abiregistry fetch --chain 1 --address 0xA0b... --name USDC
+
+  # Fetch proxy contract (gets implementation ABI automatically)
+  npx abiregistry fetch --chain 1 --address 0xProxy... --name MyToken --proxy
 
   # Fetch all contracts from config file
   npx abiregistry fetch
@@ -111,6 +115,7 @@ async function main() {
             const chain = typeof options.chain === 'string' ? parseInt(options.chain, 10) : undefined
             const address = typeof options.address === 'string' ? options.address : undefined
             const name = typeof options.name === 'string' ? options.name : undefined
+            const isProxy = options.proxy === true
             const outDir = typeof options.out === 'string' ? options.out : config.outDir
 
             await fetchCommand({
@@ -120,6 +125,7 @@ async function main() {
                 chain,
                 address,
                 name,
+                isProxy,
             })
         } else {
             // Push and Pull require API key - validate config

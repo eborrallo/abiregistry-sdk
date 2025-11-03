@@ -5,6 +5,7 @@ export type ContractConfig = {
     chain: number
     address: string
     name: string
+    isProxy?: boolean  // If true, fetch implementation ABI instead
 }
 
 export type AbiRegistryCliConfig = {
@@ -93,6 +94,7 @@ export function createConfigFile(): void {
                 chain: 1,
                 address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
                 name: 'USDC',
+                isProxy: false,
             },
         ],
     }

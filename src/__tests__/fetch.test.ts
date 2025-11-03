@@ -10,6 +10,7 @@ vi.mock('../cli/etherscan', async () => {
   return {
     ...actual,
     fetchAbiFromEtherscan: vi.fn(),
+    fetchAbiWithProxyDetection: vi.fn(),
   }
 })
 
@@ -45,18 +46,18 @@ describe('Fetch Command', () => {
         },
       ]
 
-      vi.mocked(etherscan.fetchAbiFromEtherscan).mockResolvedValueOnce(mockAbi)
+      vi.mocked(etherscan.fetchAbiWithProxyDetection).mockResolvedValueOnce(mockAbi)
 
       await fetchCommand({
-        apiKey: 'test-key',
         chain: 1,
         address: '0x1234567890123456789012345678901234567890',
         name: 'TestContract',
       })
 
-      expect(etherscan.fetchAbiFromEtherscan).toHaveBeenCalledWith(
+      expect(etherscan.fetchAbiWithProxyDetection).toHaveBeenCalledWith(
         1,
-        '0x1234567890123456789012345678901234567890'
+        '0x1234567890123456789012345678901234567890',
+        undefined
       )
     })
 
@@ -67,7 +68,6 @@ describe('Fetch Command', () => {
 
       await expect(
         fetchCommand({
-          apiKey: 'test-key',
           chain: 1,
           address: '0x1234567890123456789012345678901234567890',
           // Missing name
@@ -83,7 +83,7 @@ describe('Fetch Command', () => {
     it('should fetch multiple contracts from config', async () => {
       const mockAbi = [{ type: 'function', name: 'test' }]
 
-      vi.mocked(etherscan.fetchAbiFromEtherscan).mockResolvedValue(mockAbi)
+      vi.mocked(etherscan.fetchAbiWithProxyDetection).mockResolvedValue(mockAbi)
 
       const contracts = [
         {
@@ -99,13 +99,12 @@ describe('Fetch Command', () => {
       ]
 
       await fetchCommand({
-        apiKey: 'test-key',
         contracts,
       })
 
-      expect(etherscan.fetchAbiFromEtherscan).toHaveBeenCalledTimes(2)
-      expect(etherscan.fetchAbiFromEtherscan).toHaveBeenCalledWith(1, '0x1111111111111111111111111111111111111111')
-      expect(etherscan.fetchAbiFromEtherscan).toHaveBeenCalledWith(11155111, '0x2222222222222222222222222222222222222222')
+      expect(etherscan.fetchAbiWithProxyDetection).toHaveBeenCalledTimes(2)
+      expect(etherscan.fetchAbiWithProxyDetection).toHaveBeenCalledWith(1, '0x1111111111111111111111111111111111111111', undefined)
+      expect(etherscan.fetchAbiWithProxyDetection).toHaveBeenCalledWith(11155111, '0x2222222222222222222222222222222222222222', undefined)
     })
 
     it('should exit if no contracts provided', async () => {
@@ -114,9 +113,7 @@ describe('Fetch Command', () => {
       })
 
       await expect(
-        fetchCommand({
-          apiKey: 'test-key',
-        })
+        fetchCommand({})
       ).rejects.toThrow('process.exit called')
 
       expect(exitSpy).toHaveBeenCalledWith(1)
@@ -126,7 +123,7 @@ describe('Fetch Command', () => {
 
   describe('error handling', () => {
     it('should handle Etherscan fetch errors', async () => {
-      vi.mocked(etherscan.fetchAbiFromEtherscan).mockRejectedValueOnce(
+      vi.mocked(etherscan.fetchAbiWithProxyDetection).mockRejectedValueOnce(
         new Error('Contract not verified')
       )
 
@@ -136,7 +133,6 @@ describe('Fetch Command', () => {
 
       await expect(
         fetchCommand({
-          apiKey: 'test-key',
           contracts: [
             {
               chain: 1,
@@ -154,7 +150,7 @@ describe('Fetch Command', () => {
     it('should continue processing other contracts if one fails', async () => {
       const mockAbi = [{ type: 'function', name: 'test' }]
 
-      vi.mocked(etherscan.fetchAbiFromEtherscan)
+      vi.mocked(etherscan.fetchAbiWithProxyDetection)
         .mockRejectedValueOnce(new Error('Failed'))
         .mockResolvedValueOnce(mockAbi)
 
@@ -164,7 +160,6 @@ describe('Fetch Command', () => {
 
       await expect(
         fetchCommand({
-          apiKey: 'test-key',
           contracts: [
             {
               chain: 1,
@@ -180,13 +175,13 @@ describe('Fetch Command', () => {
         })
       ).rejects.toThrow('process.exit called')
 
-      expect(etherscan.fetchAbiFromEtherscan).toHaveBeenCalledTimes(2)
+      expect(etherscan.fetchAbiWithProxyDetection).toHaveBeenCalledTimes(2)
       expect(exitSpy).toHaveBeenCalledWith(1)
       exitSpy.mockRestore()
     })
 
     it('should handle empty ABI arrays', async () => {
-      vi.mocked(etherscan.fetchAbiFromEtherscan).mockResolvedValueOnce([])
+      vi.mocked(etherscan.fetchAbiWithProxyDetection).mockResolvedValueOnce([])
 
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
         throw new Error('process.exit called')
@@ -194,7 +189,6 @@ describe('Fetch Command', () => {
 
       await expect(
         fetchCommand({
-          apiKey: 'test-key',
           contracts: [
             {
               chain: 1,
