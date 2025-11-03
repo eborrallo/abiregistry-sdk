@@ -1,6 +1,6 @@
 # @abiregistry/sdk
 
-Official TypeScript/JavaScript SDK for ABI Registry - Push and pull smart contract ABIs seamlessly with automatic TypeScript generation.
+Official TypeScript/JavaScript SDK for ABI Registry - Push and pull smart contract ABIs seamlessly with automatic TypeScript generation, version tracking, and multi-instance support.
 
 ## Installation
 
@@ -17,17 +17,26 @@ pnpm add @abiregistry/sdk
 ### CLI Usage (Recommended)
 
 ```bash
-# Set your API key (keep this secret!)
+# Option 1: Use .env file (recommended)
+echo "ABI_REGISTRY_API_KEY=your-api-key" > .env
+
+# Option 2: Export environment variable
 export ABI_REGISTRY_API_KEY="your-api-key"
 
 # Initialize config file
 npx abiregistry init
 
-# Fetch ABI from Etherscan and push to registry
+# Fetch ABI from Etherscan (NO API key needed for fetch)
 npx abiregistry fetch --chain 1 --address 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 --name USDC
+
+# Fetch proxy contract (automatically gets implementation ABI)
+npx abiregistry fetch --chain 1 --address 0xProxyAddress... --name MyToken --proxy
 
 # Or add contracts to abiregistry.config.json and run
 npx abiregistry fetch
+
+# Push Foundry deployments to registry
+npx abiregistry foundry --script Deploy.s.sol
 
 # Pull ABIs and generate TypeScript files
 npx abiregistry pull
@@ -43,14 +52,17 @@ const client = new AbiRegistry({
   apiKey: process.env.ABI_REGISTRY_API_KEY,
 })
 
-// Push an ABI
-await client.push({
+// Push an ABI (version auto-increments: 1, 2, 3...)
+const result = await client.push({
   contractName: 'MyContract',
   address: '0x1234567890123456789012345678901234567890',
   chainId: 1,
-  network: 'mainnet',
+  label: 'Production',  // Optional label
   abi: [...], // Your ABI array
 })
+
+console.log(result.isDuplicate)  // true if ABI already exists
+console.log(result.abiId)        // ABI identifier
 
 // Pull ABIs and generate typed files
 await client.pullAndGenerate({
@@ -76,22 +88,29 @@ const balance = await publicClient.readContract({
 // Access by chain ID (same object)
 const sameContract = contracts[1].USDC
 
-// Works great with upgradeable contracts (different ABIs per network)
-contracts.mainnet.MyToken  // v1.0.0 ABI
-contracts.sepolia.MyToken  // v2.0.0 ABI (upgraded)
-contracts[137].MyToken     // Polygon deployment
+// Multiple instances of same contract (addresses array)
+contracts.sepolia.MockERC20.addresses  // ["0x123...", "0x456...", "0x789..."]
+contracts.sepolia.MockERC20.address    // Primary address (first in array)
+
+// Works great with different ABIs per network
+contracts.mainnet.MyToken   // Mainnet deployment
+contracts.sepolia.MyToken   // Sepolia deployment  
+contracts[137].MyToken      // Polygon deployment
 ```
 
 ## Features
 
-- 🔍 **Fetch from Etherscan** - Automatically fetch ABIs from verified contracts
-- 🚀 **Push ABIs** - Upload contract ABIs to your registry
+- 🔍 **Fetch from Etherscan** - Automatically fetch ABIs from verified contracts (NO API key needed!)
+- 🔓 **Proxy Contract Support** - Automatically fetch implementation ABIs for proxy contracts
+- 🔨 **Foundry Integration** - Push deployment artifacts directly from Foundry broadcast folder
 - 📦 **Pull ABIs** - Download all ABIs from your project
-- 🎯 **TypeScript Generation** - Auto-generate typed contract files
-- 📁 **File Organization** - Contracts organized by name with metadata
-- 🔄 **Automatic Versioning** - Track ABI versions across deployments
-- 🔐 **Secure Authentication** - API key-based authentication
-- 🌐 **Multi-chain Support** - Mainnet and Sepolia (more coming soon)
+- 🎯 **TypeScript Generation** - Auto-generate typed contract files with full type safety
+- 📁 **Smart Grouping** - Identical ABIs deployed to multiple addresses automatically grouped
+- 🔄 **Auto-Increment Versioning** - Versions automatically increment (v1, v2, v3...)
+- 🏷️ **Custom Labels** - Add semantic labels to deployments ("Production", "Staging", etc.)
+- 🔐 **Duplicate Detection** - Automatically skips pushing identical ABIs
+- 🔐 **Secure Authentication** - API key-based authentication for push/pull
+- 🌐 **40+ Chain Support** - Ethereum, Polygon, Arbitrum, Base, Optimism, and more
 
 ## Generated Files
 
@@ -112,20 +131,29 @@ Each contract file includes:
 ```typescript
 /**
  * MyContract
- * Network: mainnet
- * Address: 0x1234...
- * Version: 1.0.0
- * Synced: 2025-01-01T12:00:00Z
+ * Network: Ethereum Mainnet
+ * Chain ID: 1
+ * Address: 0x1234... (or multiple addresses if deployed multiple times)
+ * Version: v1
  */
 
 export const myContractAbi = [...] as const
 
+// Single address export
 export const myContractAddress = '0x1234...' as const
+
+// OR multiple addresses (when same ABI deployed multiple times)
+export const myContractAddresses = [
+  "0x1234...",
+  "0x5678...",
+  "0x9abc..."
+] as const
+export const myContractAddress = myContractAddresses[0]  // Primary
 
 export const myContractChainId = 1
 
 export const myContractConfig = {
-  address: myContractAddress,
+  address: myContractAddress,      // or addresses: myContractAddresses
   abi: myContractAbi,
   chainId: myContractChainId,
 } as const
@@ -182,20 +210,30 @@ Supported chains:
 
 **Note:** Etherscan API works without a key but has rate limits. Set `ETHERSCAN_API_KEY` for higher limits.
 
-#### `push`
-Push ABIs to the registry:
+#### `foundry`
+Push Foundry deployment artifacts to the registry:
 ```bash
-# Push from directory
-npx abiregistry push --path ./abis
+# Push latest deployment (with confirmation)
+npx abiregistry foundry --script DeployScript.s.sol
 
-# Push single file
-npx abiregistry push --path ./MyContract.json
+# Add a label for this deployment
+npx abiregistry foundry --script DeployScript.s.sol --label "Post-Audit"
+
+# Skip confirmation prompt
+npx abiregistry foundry --script DeployScript.s.sol --yes
+
+# Push specific broadcast file
+npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json
 ```
 
-Supports:
-- Single JSON files
-- Directories with multiple JSON files
-- Metadata objects or raw ABI arrays
+Features:
+- ✅ Automatically reads from `broadcast/` folder and extracts deployed contract ABIs
+- ✅ Extracts deployment timestamps from Foundry broadcast data
+- ✅ Auto-increments version numbers (v1, v2, v3...)
+- ✅ Detects and skips duplicate ABIs automatically
+- ✅ Shows confirmation table before pushing (use `--yes` to skip)
+- ✅ Filter contracts via config file
+- ✅ Use defaults from `abiregistry.config.json`
 
 #### `pull`
 Pull ABIs and generate files:
@@ -212,16 +250,41 @@ npx abiregistry pull --out ./contracts
 
 ### Configuration
 
-Configuration sources (in priority order):
+Configuration sources (in priority order, highest to lowest):
 
-1. **Command-line flags** - `--path`, `--out`, `--js`
-2. **Config file** - `abiregistry.config.json` (optional settings)
-3. **Environment variable** - `ABI_REGISTRY_API_KEY` (required!)
+1. **Command-line flags** - `--api-key`, `--out`, `--script`, etc.
+2. **Environment variables** - `ABI_REGISTRY_API_KEY`, `process.env.*`
+3. **Config file** - `abiregistry.config.json` (optional settings)
+4. **`.env` file** - Auto-loaded from project root (lowest priority)
 
 **Environment Variable (Required):**
+
+**Option 1: Using `.env` file (Recommended)**
 ```bash
-export ABI_REGISTRY_API_KEY="your-api-key"  # KEEP SECRET!
+# Create .env file in your project root
+echo "ABI_REGISTRY_API_KEY=your-api-key-here" > .env
+
+# Add to .gitignore (IMPORTANT!)
+echo ".env" >> .gitignore
+echo ".env.local" >> .gitignore
+
+# The CLI will automatically load this
+npx abiregistry fetch
 ```
+
+**Option 2: Using environment variable**
+```bash
+# Export in your shell
+export ABI_REGISTRY_API_KEY="your-api-key"
+
+# Or prefix the command
+ABI_REGISTRY_API_KEY="your-api-key" npx abiregistry fetch
+```
+
+**Supported environment variable names:**
+- `ABI_REGISTRY_API_KEY` (recommended)
+- `ABIREGISTRY_API_KEY` (alternative)
+- `API_KEY` (fallback)
 
 **Config File (Optional):**
 ```json
@@ -233,9 +296,20 @@ export ABI_REGISTRY_API_KEY="your-api-key"  # KEEP SECRET!
       "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       "name": "USDC"
     }
-  ]
+  ],
+  "foundry": {
+    "scriptDir": "Deploy.s.sol",
+    "contracts": ["MyToken", "MyNFT"],
+    "version": "1.0.0"
+  }
 }
 ```
+
+**Foundry Config Options:**
+- `scriptDir` - Default script directory (can be overridden with `--script`)
+- `contracts` - Array of contract names to push (empty = push all)
+
+**Note:** Versions are auto-incremented by the server (1, 2, 3...). Use `--label` to add semantic meaning.
 
 ⚠️ **Security**: 
 - ✅ API key contains your project permissions
@@ -256,18 +330,23 @@ const client = new AbiRegistry({
 
 ### `push(input)`
 
-Upload an ABI to the registry.
+Upload an ABI to the registry. Returns info about whether it was a new version or duplicate.
 
 ```typescript
-await client.push({
+const result = await client.push({
   contractName: 'MyContract',
   address: '0x...',
   chainId: 1,
-  network: 'mainnet',
-  version: '1.0.0',
+  label: 'Production',  // Optional: "Production", "Staging", "Post-Audit", etc.
+  deployedAt: new Date(),  // Optional: deployment timestamp
   abi: [...],
 })
+
+console.log(result.isDuplicate)  // true if this exact ABI already exists
+console.log(result.abiId)        // Unique ABI identifier
 ```
+
+**Note:** Version numbers are auto-incremented (v1, v2, v3...). You cannot set them manually.
 
 ### `pull()`
 

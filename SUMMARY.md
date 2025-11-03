@@ -4,33 +4,44 @@
 
 A complete TypeScript SDK for ABI Registry with CLI tools, Etherscan integration, and automatic NPM publishing.
 
-### Repository
-- **GitHub**: https://github.com/eborrallo/abiregistry-sdk
+### Package Info
 - **NPM Package**: `@abiregistry/sdk`
 - **License**: MIT
+- **Website**: https://abiregistry.com
 
 ## ✨ Features
 
 ### 1. **Etherscan Integration** 🔍
-Fetch ABIs directly from verified contracts:
+Fetch ABIs directly from verified contracts (NO API key needed):
 ```bash
+# Regular contract
 npx abiregistry fetch --chain 1 --address 0xA0b... --name USDC
+
+# Proxy contract (automatically gets implementation ABI)
+npx abiregistry fetch --chain 1 --address 0xProxy... --name MyToken --proxy
 ```
 
 Supported chains:
-- Ethereum Mainnet (1)
-- Sepolia Testnet (11155111)
+- 40+ chains including Ethereum, Polygon, Arbitrum, Base, Optimism, etc.
 
-### 2. **Push ABIs** 🚀
-Upload local ABI files:
+### 2. **Foundry Integration** 🔨
+Push Foundry deployment artifacts with automatic versioning:
 ```bash
-npx abiregistry push --path ./abis
+# With confirmation
+npx abiregistry foundry --script DeployScript.s.sol --label "Production"
+
+# Skip confirmation (automation)
+npx abiregistry foundry --script DeployScript.s.sol --yes
 ```
 
-Supports:
-- Single JSON files
-- Directories with multiple files
-- Metadata objects or raw ABI arrays
+Automatically:
+- Reads from broadcast folder
+- Extracts deployed contract addresses and timestamps
+- Loads ABIs from out/ folder
+- Calculates ABI hash for duplicate detection
+- Auto-increments version numbers (v1, v2, v3...)
+- Skips pushing duplicate ABIs
+- Allows custom labels for deployment context
 
 ### 3. **Pull & Generate** 📦
 Download ABIs and generate typed files:
@@ -80,54 +91,49 @@ Test Suites:
 - integration.test.ts (8 tests)
 ```
 
-## 🔧 CI/CD Setup
+## 🔧 Configuration & Setup
 
-### GitHub Actions Workflows
+### Environment Variables
 
-1. **`test.yml`**
-   - Runs on push/PR
-   - Tests on Node 18, 20, 22
-   - Coverage reporting
-   - Build verification
+**Required for push/pull:**
+- `ABI_REGISTRY_API_KEY` - Your project API key (get from dashboard at https://abiregistry.com)
 
-2. **`publish.yml`**
-   - Triggers on GitHub release
-   - Runs tests
-   - Builds package
-   - Publishes to NPM
+**Optional for better Etherscan performance:**
+- `ETHERSCAN_API_KEY` - Etherscan API key for higher rate limits
 
-3. **`release-drafter.yml`**
-   - Auto-generates release notes
-   - Categorizes changes
-   - Suggests version bumps
+### Automation Integration
 
-### Required GitHub Secrets
+Integrate into deployment workflows:
 
-- `NPM_TOKEN` - For publishing to NPM
+```bash
+#!/bin/bash
+# deploy-and-sync.sh
 
-### Optional Environment Variables
+# 1. Deploy contracts
+forge script script/Deploy.s.sol --broadcast --rpc-url $RPC_URL --verify
 
-- `ETHERSCAN_API_KEY` - For higher Etherscan rate limits
+# 2. Push ABIs to registry (automatic version increment)
+npx abiregistry foundry --script Deploy.s.sol --label "Production" --yes
+
+echo "✅ Contracts deployed and ABIs synced!"
+```
+
+**Key Features:**
+- ✅ Auto-increment versioning (v1, v2, v3...)
+- ✅ Duplicate detection and skipping
+- ✅ Deployment timestamp tracking
+- ✅ Multi-instance support (groups identical ABIs)
+- ✅ Human-readable chain names (40+ chains supported)
 
 ## 📁 Project Structure
 
 ```
-abiregistry-sdk/
-├── .github/
-│   ├── workflows/
-│   │   ├── publish.yml          # NPM publishing
-│   │   ├── test.yml             # CI testing
-│   │   └── release-drafter.yml  # Release notes
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md
-│   │   └── feature_request.md
-│   ├── CONTRIBUTING.md
-│   └── PUBLISHING.md
+@abiregistry/sdk/
 ├── src/
 │   ├── cli/
 │   │   ├── index.ts      # CLI entry
 │   │   ├── config.ts     # Config management
-│   │   ├── push.ts       # Push command
+│   │   ├── foundry.ts    # Foundry integration
 │   │   ├── pull.ts       # Pull command
 │   │   ├── fetch.ts      # Fetch command
 │   │   └── etherscan.ts  # Etherscan API
@@ -163,30 +169,28 @@ abiregistry-sdk/
 └── LICENSE
 ```
 
-## 🚀 How to Publish
+## 🚀 Using the SDK
 
-### First Time Setup
-
-1. **Get NPM token** at npmjs.com
-2. **Add to GitHub**:
-   - Go to: https://github.com/eborrallo/abiregistry-sdk/settings/secrets/actions
-   - Name: `NPM_TOKEN`
-   - Value: (your NPM token)
-
-### Publishing a Release
+### Installation
 
 ```bash
-# 1. Update version
-npm version patch  # 0.1.0 → 0.1.1
+npm install @abiregistry/sdk
+```
 
-# 2. Push
-git push && git push --tags
+### Quick Example
 
-# 3. Create GitHub release
-# Go to: https://github.com/eborrallo/abiregistry-sdk/releases/new
-# Select tag, add description, publish
+```typescript
+import { AbiRegistry } from '@abiregistry/sdk'
 
-# 4. GitHub Actions automatically publishes to NPM!
+const client = new AbiRegistry({
+  apiKey: process.env.ABI_REGISTRY_API_KEY
+})
+
+// Pull all ABIs and generate files
+await client.pullAndGenerate({
+  outDir: 'abiregistry',
+  typescript: true
+})
 ```
 
 ## 📚 Integration Examples
@@ -220,33 +224,53 @@ const { data } = useReadContract({
 
 ## 🎓 Documentation
 
-- **README.md** - Main documentation with API reference
-- **CLI.md** - Comprehensive CLI usage guide
+- **README.md** - Package overview and quick start with proxy support
+- **CLI.md** - Complete CLI reference with all flags and options
 - **CHANGELOG.md** - Version history
-- **PUBLISHING_SETUP.md** - Step-by-step NPM setup
-- **.github/CONTRIBUTING.md** - Contribution guidelines
-- **.github/PUBLISHING.md** - Maintainer release guide
 
-## ✅ Ready for Production
+## ✅ Production Ready Features
 
-- [x] Full test coverage with mocked dependencies
-- [x] TypeScript strict mode
-- [x] ESLint configured
-- [x] Build pipeline (CJS + ESM)
+- [x] Auto-increment versioning (v1, v2, v3...)
+- [x] Duplicate detection and automatic skipping
+- [x] Multi-instance support (groups identical ABIs at different addresses)
+- [x] Proxy contract support (automatic implementation ABI fetch)
+- [x] Human-readable chain names (40+ chains supported)
+- [x] Smart ABI grouping in generated files
+- [x] Version history tracking per contract
+- [x] Custom deployment labels
+- [x] TypeScript strict mode with full type safety
+- [x] Comprehensive error handling
 - [x] CLI tool with shebang
-- [x] Comprehensive documentation
-- [x] GitHub Actions CI/CD
-- [x] Issue templates
-- [x] Contributing guide
-- [x] Example code
-- [x] pnpm-lock.yaml committed
+- [x] Foundry broadcast integration
+- [x] Type-safe contract registry generation
+- [x] Deployment timestamp extraction
 
-## 🎉 Next Steps
+## 🎉 Getting Started
 
-1. Push to GitHub: `git push origin main`
-2. Add NPM_TOKEN to GitHub secrets
-3. Create your first release
-4. Share with the community!
+1. **Install the SDK**:
+   ```bash
+   npm install @abiregistry/sdk
+   ```
 
-**Package is ready to be published!** 🚀
+2. **Get your API key** from https://abiregistry.com/dashboard
+
+3. **Set environment variable**:
+   ```bash
+   export ABI_REGISTRY_API_KEY="your-api-key"
+   ```
+
+4. **Start using**:
+   ```bash
+   # Deploy and push ABIs with Foundry
+   forge script script/Deploy.s.sol --broadcast
+   npx abiregistry foundry --script Deploy.s.sol --label "Production"
+   
+   # Or fetch from Etherscan (NO API key needed)
+   npx abiregistry fetch --chain 1 --address 0x... --name USDC --proxy
+   
+   # Pull ABIs and generate typed files
+   npx abiregistry pull
+   ```
+
+**The SDK is production-ready!** 🚀
 

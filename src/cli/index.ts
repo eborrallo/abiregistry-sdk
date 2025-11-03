@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { loadConfig, validateConfig, createConfigFile } from './config'
-import { pushCommand } from './push'
 import { pullCommand } from './pull'
 import { fetchCommand } from './fetch'
 import { foundryPushCommand } from './foundry'
@@ -18,7 +17,6 @@ Usage:
 Commands:
   fetch               Fetch ABIs from Etherscan and generate files locally (NO API key needed)
   pull                Pull ABIs from registry and generate files (API key required)
-  push                Push local ABI files to the registry (API key required)
   foundry             Push Foundry deployment artifacts from broadcast folder (API key required)
   init                Create a config file (abiregistry.config.json)
   help                Show this help message
@@ -37,13 +35,11 @@ Pull Options (Registry → Local files):
   --out <dir>         Output directory (default: abiregistry)
   --js                Generate JavaScript instead of TypeScript
 
-Push Options (Local files → Registry):
-  --path <path>       Path to ABI file or directory (required)
-
 Foundry Options (Broadcast → Registry):
-  --script <dir>      Script directory name in broadcast/ (required, e.g., "DeployScript.s.sol")
+  --script <dir>      Script directory name in broadcast/ (required unless set in config)
   --file <name>       Broadcast filename (default: run-latest.json)
-  --version <ver>     Version tag for the ABIs (default: 1.0.0)
+  --label <text>      Optional label for this deployment (e.g., "Initial", "Post-Audit")
+  --yes, -y           Skip confirmation prompt
 
 Configuration:
   You can create a config file to avoid passing options every time:
@@ -70,12 +66,10 @@ Examples:
   # Pull ABIs from registry and generate TypeScript files (API key required)
   npx abiregistry pull
 
-  # Push local ABI files to the registry (API key required)
-  npx abiregistry push --path ./abis/MyContract.json
-
   # Push Foundry deployment artifacts (API key required)
   npx abiregistry foundry --script DeployScript.s.sol
-  npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json --version 2.0.0
+  npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json --label "Post-Audit"
+  npx abiregistry foundry --script DeployScript.s.sol --yes  # Skip confirmation
 `)
 }
 
@@ -139,7 +133,7 @@ async function main() {
                 isProxy,
             })
         } else {
-            // Push and Pull require API key - validate config
+            // Pull and Foundry require API key - validate config
             const validation = validateConfig(config)
             if (!validation.valid) {
                 console.error('❌ Configuration errors:')
@@ -148,36 +142,18 @@ async function main() {
                 process.exit(1)
             }
 
-            if (command === 'push') {
-                const abiPath = typeof options.path === 'string' ? options.path : ''
-
-                if (!abiPath) {
-                    console.error('❌ Error: --path is required for push command')
-                    console.error('Usage: npx abiregistry push --path <path>')
-                    process.exit(1)
-                }
-
-                await pushCommand({
-                    apiKey: config.apiKey!,
-                    abiPath,
-                })
-            } else if (command === 'foundry') {
-                const scriptDir = typeof options.script === 'string' ? options.script : ''
+            if (command === 'foundry') {
+                const scriptDir = typeof options.script === 'string' ? options.script : undefined
                 const filename = typeof options.file === 'string' ? options.file : undefined
-                const version = typeof options.version === 'string' ? options.version : undefined
-
-                if (!scriptDir) {
-                    console.error('❌ Error: --script is required for foundry command')
-                    console.error('Usage: npx abiregistry foundry --script <script-dir>')
-                    console.error('\nExample: npx abiregistry foundry --script DeployScript.s.sol')
-                    process.exit(1)
-                }
+                const label = typeof options.label === 'string' ? options.label : undefined
+                const yes = options.yes === true || options.y === true
 
                 await foundryPushCommand({
                     apiKey: config.apiKey!,
                     scriptDir,
                     filename,
-                    version,
+                    label,
+                    yes,
                 })
             } else if (command === 'pull') {
                 await pullCommand({

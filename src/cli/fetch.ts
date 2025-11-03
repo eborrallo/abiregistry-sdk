@@ -62,14 +62,20 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
       }
 
       // Create ABI item for generation
+      const now = new Date().toISOString()
       abiItems.push({
         id: `${contract.chain}-${contract.address}`,
-        contract: contract.name,
+        contractName: contract.name,
+        contract: contract.name,  // Backward compatibility
         network: getChainName(contract.chain),
-        version: '1.0.0',
+        version: 1,  // Default version for fetched contracts
         chainId: contract.chain,
         address: contract.address,
         abi,
+        deployedAt: now,
+        pushedAt: now,
+        abiHash: '',  // Not calculated for fetch
+        isLatest: true,
       })
 
       console.log(`✅ Successfully fetched ${contract.name}`)
@@ -101,7 +107,6 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
 
   console.log(`\n📊 Results: ${successCount} succeeded, ${errorCount} failed`)
   console.log(`💡 Files generated in ./${outDir}/ - ready to use!`)
-  console.log(`💡 To push these ABIs to the registry, use: npx abiregistry push --path ./${outDir}`)
 
   if (errorCount > 0) {
     process.exit(1)

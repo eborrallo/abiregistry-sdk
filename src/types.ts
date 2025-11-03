@@ -25,18 +25,29 @@ export type PushAbiInput = {
     address: string
     chainId: number
     network?: string
-    version?: string
+    label?: string          // Optional label (e.g., "Initial", "Post-Audit", cannot be "latest")
+    deployedAt?: Date      // Deployment timestamp (auto-extracted from Foundry)
+    abiHash?: string       // SHA-256 hash of ABI (auto-calculated)
     abi: AbiEntry[]
+    // Note: version is auto-incremented by the server (1, 2, 3, ...)
 }
 
 export type AbiItem = {
     id: string
-    contract: string
-    network: string
-    version: string
-    chainId: number
+    contractName: string    // Human-readable contract name
+    contract: string        // Deprecated: use contractName (kept for backward compatibility)
+    network: string         // Human-readable chain name (e.g., "Ethereum Mainnet")
     address: string
+    chainId: number
     abi: AbiEntry[]
+
+    // Version tracking
+    version?: number        // Auto-incremented version number (1, 2, 3, ...)
+    label?: string          // Optional label (e.g., "Initial", "Post-Audit")
+    deployedAt: string      // ISO timestamp when deployed
+    pushedAt: string        // ISO timestamp when pushed to registry
+    abiHash: string         // SHA-256 hash for duplicate detection
+    isLatest: boolean       // Is this the current version for this address?
 }
 
 export type PullOptions = {

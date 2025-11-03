@@ -13,8 +13,9 @@ export class AbiRegistry {
 
     /**
      * Push an ABI to the registry
+     * Returns info about whether it was a new version or duplicate
      */
-    async push(input: PushAbiInput): Promise<void> {
+    async push(input: PushAbiInput): Promise<{ isDuplicate: boolean; abiId: string }> {
         const response = await fetch(`${this.baseUrl}/api/abis`, {
             method: 'POST',
             headers: {
@@ -26,7 +27,9 @@ export class AbiRegistry {
                 address: input.address,
                 chainId: input.chainId,
                 network: input.network,
-                version: input.version,
+                label: input.label,  // Version is auto-incremented by the server
+                deployedAt: input.deployedAt?.toISOString(),
+                abiHash: input.abiHash,
                 abi: input.abi,
             }),
         })
@@ -34,6 +37,12 @@ export class AbiRegistry {
         if (!response.ok) {
             const data = await response.json().catch(() => ({})) as ApiResponse<unknown>
             throw new Error(data.error || `Failed to push ABI: ${response.statusText}`)
+        }
+
+        const data = await response.json() as ApiResponse<{ isDuplicate: boolean; abiId: string }>
+        return {
+            isDuplicate: data.isDuplicate || false,
+            abiId: data.abiId || ''
         }
     }
 

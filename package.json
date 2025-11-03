@@ -64,8 +64,10 @@
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   },
-  "peerDependencies": {},
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
   }
 }

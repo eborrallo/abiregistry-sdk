@@ -13,33 +13,62 @@ export class CodeGenerator {
     generateFiles(abis: AbiItem[]): GeneratedFile[] {
         const files: GeneratedFile[] = []
 
-        // Check for duplicate contract names
+        // Group identical ABIs (same contract name + chain + abiHash)
+        const abiGroups = this.groupIdenticalAbis(abis)
+
+        // Check for duplicate contract names across networks
         const contractNames = new Map<string, AbiItem[]>()
-        for (const abi of abis) {
+        for (const abi of abiGroups) {
             const existing = contractNames.get(abi.contract) || []
             existing.push(abi)
             contractNames.set(abi.contract, existing)
         }
 
         // Generate individual ABI files with network suffix if needed
-        for (const abi of abis) {
+        for (const abi of abiGroups) {
             const duplicates = contractNames.get(abi.contract) || []
             const needsNetworkSuffix = duplicates.length > 1
             files.push(this.generateAbiFile(abi, needsNetworkSuffix))
         }
 
         // Generate index file
-        files.push(this.generateIndexFile(abis, contractNames))
+        files.push(this.generateIndexFile(abiGroups, contractNames))
 
         // Generate types file (TypeScript only)
         if (this.typescript) {
-            files.push(this.generateTypesFile(abis, contractNames))
+            files.push(this.generateTypesFile(abiGroups, contractNames))
         }
 
         // Generate registry file with typed mapping
-        files.push(this.generateRegistryFile(abis, contractNames))
+        files.push(this.generateRegistryFile(abiGroups, contractNames))
 
         return files
+    }
+
+    /**
+     * Group identical ABIs deployed to multiple addresses
+     * Returns one ABI per unique (contractName, chain, abiHash) with all addresses
+     */
+    private groupIdenticalAbis(abis: AbiItem[]): Array<AbiItem & { addresses: string[] }> {
+        const grouped = new Map<string, AbiItem & { addresses: string[] }>()
+
+        for (const abi of abis) {
+            const key = `${abi.contract}_${abi.chainId}_${abi.abiHash}`
+
+            if (grouped.has(key)) {
+                const existing = grouped.get(key)!
+                if (!existing.addresses.includes(abi.address)) {
+                    existing.addresses.push(abi.address)
+                }
+            } else {
+                grouped.set(key, {
+                    ...abi,
+                    addresses: [abi.address]
+                })
+            }
+        }
+
+        return Array.from(grouped.values())
     }
 
     /**
@@ -65,24 +94,33 @@ export class CodeGenerator {
     /**
      * Generate TypeScript ABI file
      */
-    private generateTypeScriptAbiFile(abi: AbiItem, includeNetworkSuffix = false): string {
+    private generateTypeScriptAbiFile(abi: AbiItem & { addresses?: string[] }, includeNetworkSuffix = false): string {
         const varNameSuffix = includeNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+        const hasMultipleAddresses = abi.addresses && abi.addresses.length > 1
+        const primaryAddress = abi.address
+
+        const addressSection = hasMultipleAddresses
+            ? `export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Addresses = ${JSON.stringify(abi.addresses, null, 2)} as const
+
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Addresses[0] // Primary address`
+            : `export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = '${primaryAddress}' as const`
+
         return `/**
  * ${abi.contract}
  * Network: ${abi.network}
  * Chain ID: ${abi.chainId}
- * Address: ${abi.address}
- * Version: ${abi.version}
+ * ${hasMultipleAddresses ? `Addresses: ${abi.addresses!.length} instances` : `Address: ${primaryAddress}`}
+ * Version: v${abi.version || 1}
  */
 
 export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi = ${JSON.stringify(abi.abi, null, 2)} as const
 
-export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = '${abi.address}' as const
+${addressSection}
 
 export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId = ${abi.chainId}
 
 export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Config = {
-    address: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address,
+    ${hasMultipleAddresses ? 'addresses' : 'address'}: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address${hasMultipleAddresses ? 'es' : ''},
     abi: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi,
     chainId: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId,
 } as const
@@ -92,24 +130,33 @@ export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Config = 
     /**
      * Generate JavaScript ABI file
      */
-    private generateJavaScriptAbiFile(abi: AbiItem, includeNetworkSuffix = false): string {
+    private generateJavaScriptAbiFile(abi: AbiItem & { addresses?: string[] }, includeNetworkSuffix = false): string {
         const varNameSuffix = includeNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+        const hasMultipleAddresses = abi.addresses && abi.addresses.length > 1
+        const primaryAddress = abi.address
+
+        const addressSection = hasMultipleAddresses
+            ? `export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Addresses = ${JSON.stringify(abi.addresses, null, 2)}
+
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Addresses[0] // Primary address`
+            : `export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = '${primaryAddress}'`
+
         return `/**
  * ${abi.contract}
  * Network: ${abi.network}
  * Chain ID: ${abi.chainId}
- * Address: ${abi.address}
- * Version: ${abi.version}
+ * ${hasMultipleAddresses ? `Addresses: ${abi.addresses!.length} instances` : `Address: ${primaryAddress}`}
+ * Version: v${abi.version || 1}
  */
 
 export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi = ${JSON.stringify(abi.abi, null, 2)}
 
-export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = '${abi.address}'
+${addressSection}
 
 export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId = ${abi.chainId}
 
 export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Config = {
-    address: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address,
+    ${hasMultipleAddresses ? 'addresses' : 'address'}: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address${hasMultipleAddresses ? 'es' : ''},
     abi: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi,
     chainId: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId,
 }
@@ -289,15 +336,6 @@ ${abis.map((abi) => {
             networkObjects.push(`  ${network}: {\n${contractEntries.join(',\n')}\n  }`)
         }
 
-        // Generate chain ID aliases
-        const chainIdObjects: string[] = []
-        for (const chainId of Array.from(chainIds).sort((a, b) => a - b)) {
-            const network = abis.find(abi => abi.chainId === chainId)?.network.toLowerCase()
-            if (network) {
-                chainIdObjects.push(`  ${chainId}: contracts.${network}`)
-            }
-        }
-
         const content = `/**
  * Auto-generated contract registry
  * Generated by @abiregistry/sdk
@@ -309,11 +347,19 @@ ${abis.map((abi) => {
 
 ${imports.join('\n')}
 
-export const contracts = {
-${networkObjects.join(',\n')},
+// Network-based contract registry
+const networkContracts = {
+${networkObjects.join(',\n')}
+} as const
 
-  // Chain ID aliases (point to same objects)
-${chainIdObjects.join(',\n')}
+// Export with chain ID aliases
+export const contracts = {
+  ...networkContracts,
+  // Chain ID aliases (point to same network objects)
+${Array.from(chainIds).sort((a, b) => a - b).map(chainId => {
+            const network = abis.find(abi => abi.chainId === chainId)?.network.toLowerCase()
+            return network ? `  ${chainId}: networkContracts.${network}` : null
+        }).filter(Boolean).join(',\n')}
 } as const
 
 // Type helpers
@@ -405,15 +451,6 @@ export function getContractDeployments(contractName: string) {
             networkObjects.push(`  ${network}: {\n${contractEntries.join(',\n')}\n  }`)
         }
 
-        // Generate chain ID aliases
-        const chainIdObjects: string[] = []
-        for (const chainId of Array.from(chainIds).sort((a, b) => a - b)) {
-            const network = abis.find(abi => abi.chainId === chainId)?.network.toLowerCase()
-            if (network) {
-                chainIdObjects.push(`  ${chainId}: contracts.${network}`)
-            }
-        }
-
         const content = `/**
  * Auto-generated contract registry
  * Generated by @abiregistry/sdk
@@ -421,11 +458,19 @@ export function getContractDeployments(contractName: string) {
 
 ${imports.join('\n')}
 
-const contracts = {
-${networkObjects.join(',\n')},
+// Network-based contract registry
+const networkContracts = {
+${networkObjects.join(',\n')}
+}
 
-  // Chain ID aliases
-${chainIdObjects.join(',\n')}
+// Export with chain ID aliases
+const contracts = {
+  ...networkContracts,
+  // Chain ID aliases (point to same network objects)
+${Array.from(chainIds).sort((a, b) => a - b).map(chainId => {
+            const network = abis.find(abi => abi.chainId === chainId)?.network.toLowerCase()
+            return network ? `  ${chainId}: networkContracts.${network}` : null
+        }).filter(Boolean).join(',\n')}
 }
 
 function getContract(network, contractName) {

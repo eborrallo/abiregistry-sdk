@@ -79,7 +79,7 @@ describe('CodeGenerator', () => {
       expect(abiFile!.content).toContain('ERC20Token')
       expect(abiFile!.content).toContain('Network: mainnet')
       expect(abiFile!.content).toContain('Address: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
-      expect(abiFile!.content).toContain('Version: 1.0.0')
+      expect(abiFile!.content).toContain('Version: v1.0.0') // Generator adds "v" prefix
     })
   })
 

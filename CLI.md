@@ -29,28 +29,64 @@ This creates `abiregistry.config.json`:
 
 ### 2. Set API Key
 
-```bash
-# Copy env.example to .env
-cp node_modules/@abiregistry/sdk/env.example .env
+The CLI automatically loads your API key from:
+1. Command-line flag: `--api-key=xxx`
+2. Environment variables (current shell)
+3. `.env` file (auto-loaded, **recommended**)
+4. `.env.local` file (local overrides, auto-loaded)
+5. `abiregistry.config.json` (not recommended for secrets)
 
-# Edit .env and add your API key
+**Recommended: Use `.env` file**
+```bash
+# Create .env file
 echo "ABI_REGISTRY_API_KEY=your-api-key-here" > .env
 
-# Load environment variables
-source .env  # or use dotenv
+# Add to .gitignore
+echo ".env" >> .gitignore
+echo ".env.local" >> .gitignore
+
+# That's it! The CLI will auto-load it
+npx abiregistry fetch
 ```
+
+**Alternative: Export environment variable**
+```bash
+# Export in current shell
+export ABI_REGISTRY_API_KEY="your-api-key-here"
+
+# Or prefix each command
+ABI_REGISTRY_API_KEY="your-key" npx abiregistry fetch
+```
+
+**Supported variable names:**
+- `ABI_REGISTRY_API_KEY` (recommended)
+- `ABIREGISTRY_API_KEY` (alternative)
+- `API_KEY` (fallback)
 
 ## Commands
 
 ### `fetch` - Fetch from Etherscan
 
-Fetch ABIs from Etherscan for verified contracts and push them to the registry.
+Fetch ABIs from Etherscan for verified contracts and generate local files. **NO API key needed!**
 
 #### Fetch Single Contract
 
 ```bash
 npx abiregistry fetch --chain 1 --address 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 --name USDC
 ```
+
+#### Fetch Proxy Contract
+
+Automatically fetch the implementation ABI for proxy contracts:
+
+```bash
+npx abiregistry fetch --chain 1 --address 0xProxyAddress... --name MyToken --proxy
+```
+
+The `--proxy` flag will:
+1. Query the proxy contract to find the implementation address
+2. Fetch the implementation contract's ABI
+3. Use the implementation ABI (not the proxy ABI)
 
 #### Fetch from Config File
 
@@ -63,6 +99,12 @@ Add contracts to `abiregistry.config.json`:
       "chain": 1,
       "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       "name": "USDC"
+    },
+    {
+      "chain": 1,
+      "address": "0xProxyContractAddress...",
+      "name": "USDCProxy",
+      "isProxy": true
     },
     {
       "chain": 11155111,
@@ -93,65 +135,72 @@ export ETHERSCAN_API_KEY="your-etherscan-api-key"
 
 Get your key at [https://etherscan.io/myapikey](https://etherscan.io/myapikey)
 
-### `push` - Upload ABIs
+### `foundry` - Push Foundry Deployments
 
-Upload ABIs from your project to the registry.
+Push Foundry deployment artifacts from the broadcast folder to the registry.
 
-#### Push from Directory
-
-```bash
-npx abiregistry push --path ./abis
-```
-
-Scans the directory for all `.json` files and pushes them.
-
-#### Push Single File
+#### Push Latest Deployment
 
 ```bash
-npx abiregistry push --path ./MyContract.json
+# With confirmation prompt
+npx abiregistry foundry --script DeployScript.s.sol
+
+# Add a label for this deployment
+npx abiregistry foundry --script DeployScript.s.sol --label "Post-Audit"
+
+# Skip confirmation (for automation)
+npx abiregistry foundry --script DeployScript.s.sol --yes
 ```
 
-**Note:** Project ID and base URL come from `abiregistry.config.json`. Only the API key is an environment variable.
+Reads from `broadcast/DeployScript.s.sol/run-latest.json` and extracts deployed contract ABIs.
 
-#### ABI File Formats
+#### Push Specific Broadcast
 
-**Option 1: Metadata Object** (Recommended)
+```bash
+npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json --label "Hotfix"
+```
+
+#### Use Config Defaults
+
+Create `abiregistry.config.json`:
 ```json
 {
-  "contractName": "MyToken",
-  "address": "0x1234567890123456789012345678901234567890",
-  "chainId": 1,
-  "network": "mainnet",
-  "version": "1.0.0",
-  "abi": [
-    {
-      "type": "function",
-      "name": "transfer",
-      "stateMutability": "nonpayable",
-      "inputs": [...],
-      "outputs": [...]
-    }
-  ]
+  "foundry": {
+    "scriptDir": "DeployScript.s.sol",
+    "contracts": ["MyToken", "MyNFT"]
+  }
 }
 ```
 
-**Option 2: Raw ABI Array**
-```json
-[
-  {
-    "type": "function",
-    "name": "transfer",
-    "stateMutability": "nonpayable",
-    "inputs": [...],
-    "outputs": [...]
-  }
-]
+Then run without flags:
+```bash
+npx abiregistry foundry
 ```
 
-If using raw ABI, the CLI will:
-- Use filename as contract name
-- Require you to provide address via filename or separately
-- Default to mainnet (chainId: 1)
+**How it works:**
+1. Parses the broadcast JSON file to find CREATE transactions
+2. Extracts deployment timestamps from Foundry data
+3. Calculates ABI hash for duplicate detection
+4. Filters contracts if specified in config (or pushes all)
+5. Loads ABIs from the `out/` folder for each deployed contract
+6. Shows confirmation table with contract details
+7. Pushes ABIs to the registry
+   - **Auto-increments version** (v1, v2, v3...)
+   - **Skips duplicates** automatically
+   - **Adds optional labels** for semantic meaning
+
+**Features:**
+- ✅ Versions auto-increment - you don't set them manually
+- ✅ Duplicate detection - same ABI won't create duplicate versions
+- ✅ Labels for context - "Production", "Staging", "Post-Audit", etc.
+- ✅ Label "latest" is reserved and cannot be used
+- ✅ Always shows what will be pushed before confirmation
+- ✅ Use `--yes` flag to skip confirmation (for automation)
+
+**Requirements:**
+- Run `forge build` to compile contracts
+- Run `forge script <script> --broadcast` to deploy
+- Execute from your Foundry project root directory
 
 ### `pull` - Download ABIs
 
@@ -207,19 +256,31 @@ Generates files in `./contracts/` instead of `./abiregistry/`.
      ]
    }
    ```
-3. Fetch and push:
+3. Fetch:
    ```bash
    npx abiregistry fetch
    ```
 
-**Option 2: Push Local Files**
+**Option 2: Foundry Deployment** (Recommended)
 
-1. Deploy contracts and extract ABIs
-2. Save ABIs to `./abis` directory
-3. Push to registry:
+1. Deploy contracts using Foundry:
    ```bash
-   npx abiregistry push --path ./abis
+   forge script script/Deploy.s.sol --broadcast --rpc-url $RPC_URL
    ```
+2. Push to registry (with confirmation):
+   ```bash
+   npx abiregistry foundry --script Deploy.s.sol --label "Production"
+   ```
+3. Or skip confirmation for automation:
+   ```bash
+   npx abiregistry foundry --script Deploy.s.sol --label "Production" --yes
+   ```
+
+**What happens:**
+- ✅ Version auto-increments (v1 → v2 → v3...)
+- ✅ Duplicate ABIs are automatically skipped
+- ✅ Deployment timestamp extracted from Foundry broadcast
+- ✅ Label helps identify deployment context
 
 ### Frontend/Backend Team Workflow
 
@@ -246,56 +307,35 @@ Generates files in `./contracts/` instead of `./abiregistry/`.
    }
    ```
 
-## CI/CD Integration
+## Automation
 
-### GitHub Actions
+### Automated Deployment with Foundry
 
-```yaml
-name: Sync ABIs
-on:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
+Integrate ABI pushing into your deployment scripts:
 
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: Pull ABIs
-        env:
-          ABI_REGISTRY_API_KEY: ${{ secrets.ABI_REGISTRY_API_KEY }}
-        run: |
-          npx abiregistry pull --project ${{ vars.PROJECT_ID }}
-      
-      - name: Commit changes
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add abiregistry/
-          git diff --quiet || git commit -m "chore: sync ABIs"
-          git push
+```bash
+#!/bin/bash
+# deploy.sh
+
+# Deploy contracts
+forge script script/Deploy.s.sol --broadcast --rpc-url $RPC_URL
+
+# Push ABIs to registry (with auto-confirmation)
+npx abiregistry foundry --script Deploy.s.sol --label "Production" --yes
+
+echo "✅ Deployment and ABI sync complete!"
 ```
 
-### GitLab CI
+### CI/CD Integration
 
-```yaml
-sync-abis:
-  image: node:20
-  script:
-    - npx abiregistry pull --project $PROJECT_ID
-  only:
-    - schedules
-  variables:
-    ABI_REGISTRY_API_KEY: $ABI_REGISTRY_API_KEY
+Use the `--yes` flag to skip confirmation prompts in automated environments:
+
+```bash
+# In your CI/CD pipeline
+npx abiregistry foundry --script Deploy.s.sol --yes
 ```
+
+**Security Note:** Store your `ABI_REGISTRY_API_KEY` as a secret in your CI/CD platform.
 
 ## Troubleshooting
 
@@ -328,7 +368,7 @@ sync-abis:
 ### Permission Denied
 
 ```
-❌ Failed to push: Insufficient permissions
+❌ Failed to push ABIs: Insufficient permissions
 ```
 
 **Solution:** Verify your API key has write permissions for the project.
@@ -348,18 +388,18 @@ sync-abis:
 ABI_REGISTRY_API_KEY=your-secret-key
 
 # Now you can run without flags
-npx abiregistry push --path ./abis
+npx abiregistry foundry --script Deploy.s.sol
 npx abiregistry pull
 ```
 
 ### Multiple Projects
 
 ```bash
-# Push to production project
-npx abiregistry push --project prod-project-id --path ./abis
+# Push Foundry deployments to production project
+npx abiregistry foundry --script Deploy.s.sol
 
 # Pull from staging project
-npx abiregistry pull --project staging-project-id --out ./abis-staging
+npx abiregistry pull --out ./abis-staging
 ```
 
 ### Custom Base URL (Self-hosted)

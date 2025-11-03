@@ -1,6 +1,37 @@
 {
+  // ==============================================================================
+  // ABI Registry Configuration
+  // ==============================================================================
+  // This file configures the ABI Registry SDK for fetching and managing ABIs.
+  // 
+  // Documentation: https://abiregistry.dev/docs
+  // ==============================================================================
+
+  // API Key Configuration
+  // ---------------------
+  // DO NOT store your API key in this file!
+  // Instead, create a .env file in your project root:
+  //
+  //   echo "ABI_REGISTRY_API_KEY=your-api-key-here" > .env
+  //   echo ".env" >> .gitignore
+  //
+  // Get your API key from: https://abiregistry.dev/app
+  // The CLI will automatically load it from .env
+
+  // Output directory for generated ABI files
+  // Generated files will be placed in: ./{outDir}/
   "outDir": "abiregistry",
+
+  // ==============================================================================
+  // CONTRACT CONFIGURATION
+  // ==============================================================================
+  // Define contracts to fetch from Etherscan-compatible explorers
+  // Supports 40+ chains including Ethereum, Polygon, BSC, Arbitrum, Optimism, etc.
+  // ==============================================================================
   "contracts": [
+    // ──────────────────────────────────────────────────────────────────────────
+    // ETHEREUM MAINNET EXAMPLES
+    // ──────────────────────────────────────────────────────────────────────────
     {
       "chain": 1,
       "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
@@ -8,18 +39,213 @@
       "isProxy": false
     },
     {
+      "chain": 1,
+      "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      "name": "USDT",
+      "isProxy": false
+    },
+    {
+      "chain": 1,
+      "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "name": "DAI",
+      "isProxy": false
+    },
+    {
+      "chain": 1,
+      "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+      "name": "wstETH",
+      "isProxy": false
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // PROXY CONTRACT EXAMPLES
+    // ──────────────────────────────────────────────────────────────────────────
+    // Set "isProxy": true to automatically fetch the implementation ABI
+    {
+      "chain": 1,
+      "address": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+      "name": "UNI",
+      "isProxy": true,
+      "_comment": "Uniswap governance token (UUPS proxy)"
+    },
+    {
+      "chain": 1,
+      "address": "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9",
+      "name": "AAVE",
+      "isProxy": true,
+      "_comment": "Aave token (TransparentUpgradeableProxy)"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // ETHEREUM SEPOLIA TESTNET
+    // ──────────────────────────────────────────────────────────────────────────
+    {
       "chain": 11155111,
       "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
       "name": "SepoliaUSDC",
       "isProxy": false
     },
     {
-      "_comment": "Example proxy contract - will fetch implementation ABI",
-      "chain": 1,
-      "address": "0x1234567890123456789012345678901234567890",
-      "name": "MyUpgradeableToken",
-      "isProxy": true
-    }
-  ]
-}
+      "chain": 11155111,
+      "address": "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+      "name": "SepoliaLINK",
+      "isProxy": false
+    },
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // POLYGON (MATIC) MAINNET
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      "chain": 137,
+      "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+      "name": "PolygonUSDC",
+      "isProxy": false,
+      "_comment": "USDC on Polygon"
+    },
+    {
+      "chain": 137,
+      "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+      "name": "PolygonWETH",
+      "isProxy": false,
+      "_comment": "Wrapped ETH on Polygon"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // ARBITRUM ONE
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      "chain": 42161,
+      "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+      "name": "ArbitrumUSDC",
+      "isProxy": false,
+      "_comment": "Native USDC on Arbitrum"
+    },
+    {
+      "chain": 42161,
+      "address": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+      "name": "ArbitrumARB",
+      "isProxy": false,
+      "_comment": "Arbitrum governance token"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // OPTIMISM
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      "chain": 10,
+      "address": "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+      "name": "OptimismUSDC",
+      "isProxy": false,
+      "_comment": "USDC on Optimism"
+    },
+    {
+      "chain": 10,
+      "address": "0x4200000000000000000000000000000000000042",
+      "name": "OptimismOP",
+      "isProxy": false,
+      "_comment": "Optimism governance token"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // BASE (COINBASE L2)
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      "chain": 8453,
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "name": "BaseUSDC",
+      "isProxy": false,
+      "_comment": "Native USDC on Base"
+    },
+    {
+      "chain": 8453,
+      "address": "0x4200000000000000000000000000000000000006",
+      "name": "BaseWETH",
+      "isProxy": false,
+      "_comment": "Wrapped ETH on Base"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // BINANCE SMART CHAIN (BSC)
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      "chain": 56,
+      "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      "name": "BscUSDC",
+      "isProxy": false
+    },
+    {
+      "chain": 56,
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "name": "BscWBNB",
+      "isProxy": false,
+      "_comment": "Wrapped BNB"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // AVALANCHE C-CHAIN
+    // ──────────────────────────────────────────────────────────────────────────
+    {
+      "chain": 43114,
+      "address": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+      "name": "AvalancheUSDC",
+      "isProxy": false
+    },
+    {
+      "chain": 43114,
+      "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+      "name": "AvalancheWAVAX",
+      "isProxy": false,
+      "_comment": "Wrapped AVAX"
+    },
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // YOUR CUSTOM CONTRACTS
+    // ──────────────────────────────────────────────────────────────────────────
+    // Add your own deployed contracts here
+    {
+      "chain": 11155111,
+      "address": "0xYourContractAddress1",
+      "name": "MyToken",
+      "isProxy": false,
+      "_comment": "Your custom ERC20 token"
+    },
+    {
+      "chain": 11155111,
+      "address": "0xYourContractAddress2",
+      "name": "MyNFT",
+      "isProxy": false,
+      "_comment": "Your custom ERC721 NFT"
+    },
+    {
+      "chain": 11155111,
+      "address": "0xYourUpgradeableContract",
+      "name": "MyUpgradeableVault",
+      "isProxy": true,
+      "_comment": "Your upgradeable contract (will fetch implementation ABI)"
+    }
+  ],
+
+  // ==============================================================================
+  // FOUNDRY INTEGRATION (for automated ABI pushing)
+  // ==============================================================================
+  // Configure Foundry deployment automation
+  // Automatically push ABIs after running: forge script YourScript --broadcast
+  // ==============================================================================
+  "foundry": {
+    // Directory where Foundry stores broadcast files
+    // Default: broadcast/
+    "scriptDir": "broadcast",
+
+    // Contract names to track (optional - if empty, tracks all contracts)
+    // Only contracts in this list will be pushed to the registry
+    "contracts": [
+      "MyToken",
+      "MyNFT",
+      "MyVault",
+      "MyGovernance"
+    ]
+
+    // Note: Versions are auto-incremented (1, 2, 3, ...)
+    // Use --label flag to add custom labels: npx abiregistry foundry --label "v1.0-audit"
+  }
+}
