@@ -41,30 +41,35 @@ async function parseBroadcastFile(filePath: string): Promise<FoundryBroadcast> {
 }
 
 /**
- * Load ABI for a contract from Foundry out directory
+ * Load ABI for a contract using forge inspect command
+ * This is more reliable than reading from out/ folder which may be in .gitignore
  */
 async function loadContractAbi(contractName: string): Promise<unknown[]> {
-    // Try common patterns for Foundry out directory
-    const possiblePaths = [
-        path.join(process.cwd(), 'out', `${contractName}.sol`, `${contractName}.json`),
-        path.join(process.cwd(), 'out', `${contractName}.json`),
-    ]
+    const { exec } = await import('child_process')
+    const { promisify } = await import('util')
+    const execAsync = promisify(exec)
 
-    for (const abiPath of possiblePaths) {
-        try {
-            const content = await fs.readFile(abiPath, 'utf-8')
-            const artifact = JSON.parse(content)
-            
-            if (artifact.abi && Array.isArray(artifact.abi)) {
-                return artifact.abi
-            }
-        } catch {
-            // Try next path
-            continue
+    try {
+        // Use forge inspect to get ABI (works even if out/ is gitignored)
+        const { stdout } = await execAsync(`forge inspect ${contractName} abi`)
+        const abi = JSON.parse(stdout.trim())
+        
+        if (!Array.isArray(abi)) {
+            throw new Error('Invalid ABI format')
         }
-    }
 
-    throw new Error(`Could not find ABI for contract ${contractName}. Make sure the contract is compiled.`)
+        return abi
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        throw new Error(
+            `Could not load ABI for contract ${contractName}.\n` +
+            `Make sure:\n` +
+            `  1. The contract is compiled (run: forge build)\n` +
+            `  2. Forge is installed and in your PATH\n` +
+            `  3. You're in the project root directory\n\n` +
+            `Error: ${message}`
+        )
+    }
 }
 
 /**
