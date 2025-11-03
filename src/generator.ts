@@ -13,18 +13,31 @@ export class CodeGenerator {
     generateFiles(abis: AbiItem[]): GeneratedFile[] {
         const files: GeneratedFile[] = []
 
-        // Generate individual ABI files
+        // Check for duplicate contract names
+        const contractNames = new Map<string, AbiItem[]>()
         for (const abi of abis) {
-            files.push(this.generateAbiFile(abi))
+            const existing = contractNames.get(abi.contract) || []
+            existing.push(abi)
+            contractNames.set(abi.contract, existing)
+        }
+
+        // Generate individual ABI files with network suffix if needed
+        for (const abi of abis) {
+            const duplicates = contractNames.get(abi.contract) || []
+            const needsNetworkSuffix = duplicates.length > 1
+            files.push(this.generateAbiFile(abi, needsNetworkSuffix))
         }
 
         // Generate index file
-        files.push(this.generateIndexFile(abis))
+        files.push(this.generateIndexFile(abis, contractNames))
 
         // Generate types file (TypeScript only)
         if (this.typescript) {
-            files.push(this.generateTypesFile(abis))
+            files.push(this.generateTypesFile(abis, contractNames))
         }
+
+        // Generate registry file with typed mapping
+        files.push(this.generateRegistryFile(abis, contractNames))
 
         return files
     }
@@ -32,13 +45,16 @@ export class CodeGenerator {
     /**
      * Generate individual ABI file
      */
-    private generateAbiFile(abi: AbiItem): GeneratedFile {
-        const fileName = this.sanitizeFileName(abi.contract)
+    private generateAbiFile(abi: AbiItem, includeNetworkSuffix = false): GeneratedFile {
+        const baseName = this.sanitizeFileName(abi.contract)
+        const fileName = includeNetworkSuffix 
+            ? `${baseName}-${abi.network.toLowerCase()}`
+            : baseName
         const ext = this.typescript ? '.ts' : '.js'
 
         const content = this.typescript
-            ? this.generateTypeScriptAbiFile(abi)
-            : this.generateJavaScriptAbiFile(abi)
+            ? this.generateTypeScriptAbiFile(abi, includeNetworkSuffix)
+            : this.generateJavaScriptAbiFile(abi, includeNetworkSuffix)
 
         return {
             path: `${fileName}${ext}`,
@@ -49,7 +65,8 @@ export class CodeGenerator {
     /**
      * Generate TypeScript ABI file
      */
-    private generateTypeScriptAbiFile(abi: AbiItem): string {
+    private generateTypeScriptAbiFile(abi: AbiItem, includeNetworkSuffix = false): string {
+        const varNameSuffix = includeNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
         return `/**
  * ${abi.contract}
  * Network: ${abi.network}
@@ -58,16 +75,16 @@ export class CodeGenerator {
  * Version: ${abi.version}
  */
 
-export const ${this.sanitizeVariableName(abi.contract)}Abi = ${JSON.stringify(abi.abi, null, 2)} as const
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi = ${JSON.stringify(abi.abi, null, 2)} as const
 
-export const ${this.sanitizeVariableName(abi.contract)}Address = '${abi.address}' as const
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = '${abi.address}' as const
 
-export const ${this.sanitizeVariableName(abi.contract)}ChainId = ${this.getChainIdFromNetwork(abi.network)}
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId = ${abi.chainId}
 
-export const ${this.sanitizeVariableName(abi.contract)}Config = {
-    address: ${this.sanitizeVariableName(abi.contract)}Address,
-    abi: ${this.sanitizeVariableName(abi.contract)}Abi,
-    chainId: ${this.sanitizeVariableName(abi.contract)}ChainId,
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Config = {
+    address: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address,
+    abi: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi,
+    chainId: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId,
 } as const
 `
     }
@@ -75,7 +92,8 @@ export const ${this.sanitizeVariableName(abi.contract)}Config = {
     /**
      * Generate JavaScript ABI file
      */
-    private generateJavaScriptAbiFile(abi: AbiItem): string {
+    private generateJavaScriptAbiFile(abi: AbiItem, includeNetworkSuffix = false): string {
+        const varNameSuffix = includeNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
         return `/**
  * ${abi.contract}
  * Network: ${abi.network}
@@ -84,16 +102,16 @@ export const ${this.sanitizeVariableName(abi.contract)}Config = {
  * Version: ${abi.version}
  */
 
-export const ${this.sanitizeVariableName(abi.contract)}Abi = ${JSON.stringify(abi.abi, null, 2)}
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi = ${JSON.stringify(abi.abi, null, 2)}
 
-export const ${this.sanitizeVariableName(abi.contract)}Address = '${abi.address}'
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address = '${abi.address}'
 
-export const ${this.sanitizeVariableName(abi.contract)}ChainId = ${this.getChainIdFromNetwork(abi.network)}
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId = ${abi.chainId}
 
-export const ${this.sanitizeVariableName(abi.contract)}Config = {
-    address: ${this.sanitizeVariableName(abi.contract)}Address,
-    abi: ${this.sanitizeVariableName(abi.contract)}Abi,
-    chainId: ${this.sanitizeVariableName(abi.contract)}ChainId,
+export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Config = {
+    address: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Address,
+    abi: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Abi,
+    chainId: ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}ChainId,
 }
 `
     }
@@ -101,10 +119,15 @@ export const ${this.sanitizeVariableName(abi.contract)}Config = {
     /**
      * Generate index file that exports all ABIs
      */
-    private generateIndexFile(abis: AbiItem[]): GeneratedFile {
+    private generateIndexFile(abis: AbiItem[], contractNames: Map<string, AbiItem[]>): GeneratedFile {
         const ext = this.typescript ? '.ts' : '.js'
         const exports = abis.map((abi) => {
-            const fileName = this.sanitizeFileName(abi.contract)
+            const duplicates = contractNames.get(abi.contract) || []
+            const needsNetworkSuffix = duplicates.length > 1
+            const baseName = this.sanitizeFileName(abi.contract)
+            const fileName = needsNetworkSuffix 
+                ? `${baseName}-${abi.network.toLowerCase()}`
+                : baseName
             return `export * from './${fileName}'`
         })
 
@@ -114,6 +137,9 @@ export const ${this.sanitizeVariableName(abi.contract)}Config = {
  */
 
 ${exports.join('\n')}
+
+// Re-export registry for convenience
+export { contracts } from './registry'
 `
 
         return {
@@ -125,10 +151,17 @@ ${exports.join('\n')}
     /**
      * Generate types file for TypeScript
      */
-    private generateTypesFile(abis: AbiItem[]): GeneratedFile {
+    private generateTypesFile(abis: AbiItem[], contractNames: Map<string, AbiItem[]>): GeneratedFile {
         const typeDefinitions = abis.map((abi) => {
+            const duplicates = contractNames.get(abi.contract) || []
+            const needsNetworkSuffix = duplicates.length > 1
+            const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+            const baseName = this.sanitizeFileName(abi.contract)
+            const fileName = needsNetworkSuffix 
+                ? `${baseName}-${abi.network.toLowerCase()}`
+                : baseName
             const varName = this.sanitizeVariableName(abi.contract)
-            return `export type ${varName}Type = typeof import('./${this.sanitizeFileName(abi.contract)}').${varName}Abi`
+            return `export type ${varName}${varNameSuffix}Type = typeof import('./${fileName}').${varName}${varNameSuffix}Abi`
         })
 
         const content = `/**
@@ -140,8 +173,11 @@ ${typeDefinitions.join('\n')}
 
 export type AllAbis = {
 ${abis.map((abi) => {
+            const duplicates = contractNames.get(abi.contract) || []
+            const needsNetworkSuffix = duplicates.length > 1
+            const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
             const varName = this.sanitizeVariableName(abi.contract)
-            return `    ${varName}: ${varName}Type`
+            return `    ${varName}${varNameSuffix}: ${varName}${varNameSuffix}Type`
         }).join('\n')}
 }
 `
@@ -188,26 +224,240 @@ ${abis.map((abi) => {
     }
 
     /**
-     * Extract chain ID from network name
-     * This is a simple implementation, can be enhanced
+     * Capitalize first letter
      */
-    private getChainIdFromNetwork(network: string): number {
-        const networkMap: Record<string, number> = {
-            mainnet: 1,
-            ethereum: 1,
-            goerli: 5,
-            sepolia: 11155111,
-            polygon: 137,
-            mumbai: 80001,
-            arbitrum: 42161,
-            optimism: 10,
-            base: 8453,
-            bsc: 56,
-            avalanche: 43114,
+    private capitalizeFirst(str: string): string {
+        if (!str) return ''
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    }
+
+    /**
+     * Generate registry file with typed contract mapping
+     */
+    private generateRegistryFile(abis: AbiItem[], contractNames: Map<string, AbiItem[]>): GeneratedFile {
+        // Group ABIs by network
+        const byNetwork = new Map<string, Map<string, AbiItem>>()
+        const chainIds = new Set<number>()
+        
+        for (const abi of abis) {
+            const network = abi.network.toLowerCase()
+            if (!byNetwork.has(network)) {
+                byNetwork.set(network, new Map())
+            }
+            byNetwork.get(network)!.set(abi.contract, abi)
+            chainIds.add(abi.chainId)
         }
 
-        const normalized = network.toLowerCase()
-        return networkMap[normalized] || parseInt(network, 10) || 1
+        if (this.typescript) {
+            return this.generateTypeScriptRegistry(abis, contractNames, byNetwork, chainIds)
+        } else {
+            return this.generateJavaScriptRegistry(abis, contractNames, byNetwork, chainIds)
+        }
+    }
+
+    private generateTypeScriptRegistry(
+        abis: AbiItem[],
+        contractNames: Map<string, AbiItem[]>,
+        byNetwork: Map<string, Map<string, AbiItem>>,
+        chainIds: Set<number>
+    ): GeneratedFile {
+        // Generate imports
+        const imports: string[] = []
+        for (const abi of abis) {
+            const duplicates = contractNames.get(abi.contract) || []
+            const needsNetworkSuffix = duplicates.length > 1
+            const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+            const baseName = this.sanitizeFileName(abi.contract)
+            const fileName = needsNetworkSuffix 
+                ? `${baseName}-${abi.network.toLowerCase()}`
+                : baseName
+            const varName = this.sanitizeVariableName(abi.contract)
+            imports.push(`import { ${varName}${varNameSuffix}Config } from './${fileName}'`)
+        }
+
+        // Generate network objects
+        const networkObjects: string[] = []
+        for (const [network, contracts] of byNetwork) {
+            const contractEntries: string[] = []
+            for (const [contractName, abi] of contracts) {
+                const duplicates = contractNames.get(contractName) || []
+                const needsNetworkSuffix = duplicates.length > 1
+                const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+                const varName = this.sanitizeVariableName(contractName)
+                contractEntries.push(`    ${contractName}: ${varName}${varNameSuffix}Config`)
+            }
+            networkObjects.push(`  ${network}: {\n${contractEntries.join(',\n')}\n  }`)
+        }
+
+        // Generate chain ID aliases
+        const chainIdObjects: string[] = []
+        for (const chainId of Array.from(chainIds).sort((a, b) => a - b)) {
+            const network = abis.find(abi => abi.chainId === chainId)?.network.toLowerCase()
+            if (network) {
+                chainIdObjects.push(`  ${chainId}: contracts.${network}`)
+            }
+        }
+
+        const content = `/**
+ * Auto-generated contract registry
+ * Generated by @abiregistry/sdk
+ * 
+ * Access contracts by network name or chain ID:
+ * - contracts.mainnet.MyToken
+ * - contracts[1].MyToken
+ */
+
+${imports.join('\n')}
+
+export const contracts = {
+${networkObjects.join(',\n')},
+
+  // Chain ID aliases (point to same objects)
+${chainIdObjects.join(',\n')}
+} as const
+
+// Type helpers
+export type Network = keyof typeof contracts
+export type ContractsOn<T extends Network> = T extends string | number 
+  ? typeof contracts[T] extends object ? keyof typeof contracts[T] : never
+  : never
+
+/**
+ * Get a contract config with full type safety
+ * @example
+ * const token = getContract('mainnet', 'MyToken')
+ * const sameToken = getContract(1, 'MyToken')  // Same as above
+ */
+export function getContract<
+  TNet extends Network,
+  TName extends ContractsOn<TNet>
+>(
+  network: TNet,
+  contractName: TName
+): typeof contracts[TNet][TName] {
+  return contracts[network][contractName]
+}
+
+/**
+ * Get all deployments of a contract across networks
+ */
+export function getContractDeployments(contractName: string) {
+  const deployments: Array<{
+    network: string
+    chainId: number
+    config: any
+  }> = []
+  
+  for (const [key, networkContracts] of Object.entries(contracts)) {
+    if (typeof key === 'string' && !key.match(/^\\d+$/)) {
+      const contract = (networkContracts as any)[contractName]
+      if (contract) {
+        deployments.push({
+          network: key,
+          chainId: contract.chainId,
+          config: contract
+        })
+      }
+    }
+  }
+  
+  return deployments
+}
+`
+
+        return {
+            path: 'registry.ts',
+            content,
+        }
+    }
+
+    private generateJavaScriptRegistry(
+        abis: AbiItem[],
+        contractNames: Map<string, AbiItem[]>,
+        byNetwork: Map<string, Map<string, AbiItem>>,
+        chainIds: Set<number>
+    ): GeneratedFile {
+        // Generate imports
+        const imports: string[] = []
+        for (const abi of abis) {
+            const duplicates = contractNames.get(abi.contract) || []
+            const needsNetworkSuffix = duplicates.length > 1
+            const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+            const baseName = this.sanitizeFileName(abi.contract)
+            const fileName = needsNetworkSuffix 
+                ? `${baseName}-${abi.network.toLowerCase()}`
+                : baseName
+            const varName = this.sanitizeVariableName(abi.contract)
+            imports.push(`const { ${varName}${varNameSuffix}Config } = require('./${fileName}')`)
+        }
+
+        // Generate network objects
+        const networkObjects: string[] = []
+        for (const [network, contracts] of byNetwork) {
+            const contractEntries: string[] = []
+            for (const [contractName, abi] of contracts) {
+                const duplicates = contractNames.get(contractName) || []
+                const needsNetworkSuffix = duplicates.length > 1
+                const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
+                const varName = this.sanitizeVariableName(contractName)
+                contractEntries.push(`    ${contractName}: ${varName}${varNameSuffix}Config`)
+            }
+            networkObjects.push(`  ${network}: {\n${contractEntries.join(',\n')}\n  }`)
+        }
+
+        // Generate chain ID aliases
+        const chainIdObjects: string[] = []
+        for (const chainId of Array.from(chainIds).sort((a, b) => a - b)) {
+            const network = abis.find(abi => abi.chainId === chainId)?.network.toLowerCase()
+            if (network) {
+                chainIdObjects.push(`  ${chainId}: contracts.${network}`)
+            }
+        }
+
+        const content = `/**
+ * Auto-generated contract registry
+ * Generated by @abiregistry/sdk
+ */
+
+${imports.join('\n')}
+
+const contracts = {
+${networkObjects.join(',\n')},
+
+  // Chain ID aliases
+${chainIdObjects.join(',\n')}
+}
+
+function getContract(network, contractName) {
+  return contracts[network][contractName]
+}
+
+function getContractDeployments(contractName) {
+  const deployments = []
+  
+  for (const [key, networkContracts] of Object.entries(contracts)) {
+    if (typeof key === 'string' && !key.match(/^\\d+$/)) {
+      const contract = networkContracts[contractName]
+      if (contract) {
+        deployments.push({
+          network: key,
+          chainId: contract.chainId,
+          config: contract
+        })
+      }
+    }
+  }
+  
+  return deployments
+}
+
+module.exports = { contracts, getContract, getContractDeployments }
+`
+
+        return {
+            path: 'registry.js',
+            content,
+        }
     }
 }
 

@@ -163,14 +163,14 @@ export async function getProxyImplementation(chainId: number, proxyAddress: stri
 
     // Result is a hex string, convert to address
     const implementationHex = data.result
-    
+
     if (!implementationHex || implementationHex === '0x' || implementationHex === '0x0000000000000000000000000000000000000000000000000000000000000000') {
       return null
     }
 
     // Extract address from storage slot (last 40 hex chars)
     const implementationAddress = '0x' + implementationHex.slice(-40)
-    
+
     console.log(`✓ Proxy detected! Implementation: ${implementationAddress}`)
     return implementationAddress
   } catch (error) {
@@ -193,11 +193,11 @@ export async function fetchAbiWithProxyDetection(
   if (isProxy) {
     console.log(`Contract marked as proxy, fetching implementation...`)
     const implementation = await getProxyImplementation(chainId, address)
-    
+
     if (!implementation) {
       throw new Error(`Failed to get implementation address for proxy ${address}`)
     }
-    
+
     targetAddress = implementation
   }
 

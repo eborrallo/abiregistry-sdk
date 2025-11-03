@@ -65,8 +65,8 @@ describe('pullAndGenerate', () => {
       typescript: true,
     })
 
-    expect(files).toHaveLength(3) // abi file, index file, types file
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(3)
+    expect(files).toHaveLength(4) // abi file, index file, types file, registry file
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(4)
   })
 
   it('should create output directory if it does not exist', async () => {
@@ -199,8 +199,8 @@ describe('pullAndGenerate', () => {
 
     const files = await client.pullAndGenerate()
 
-    // Should have 3 contract files + 1 index + 1 types = 5 files
-    expect(files).toHaveLength(5)
+    // Should have 3 contract files + 1 index + 1 types + 1 registry = 6 files
+    expect(files).toHaveLength(6)
   })
 
   it('should throw error if pull fails', async () => {

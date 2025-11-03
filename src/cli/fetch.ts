@@ -43,14 +43,14 @@ export async function fetchCommand(options: FetchOptions): Promise<void> {
   for (const contract of contractsToFetch) {
     try {
       console.log(`\n🔍 Fetching ${contract.name} from chain ${contract.chain}...`)
-      
+
       if (contract.isProxy) {
         console.log(`📦 Contract is a proxy, will fetch implementation ABI`)
       }
 
       // Fetch ABI from Etherscan (with proxy detection)
       const abi = await fetchAbiWithProxyDetection(
-        contract.chain, 
+        contract.chain,
         contract.address,
         contract.isProxy
       ) as AbiEntry[]

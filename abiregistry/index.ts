@@ -4,3 +4,6 @@
  */
 
 export * from './contract2'
+
+// Re-export registry for convenience
+export { contracts } from './registry'

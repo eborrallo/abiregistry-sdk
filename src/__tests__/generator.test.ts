@@ -8,8 +8,7 @@ describe('CodeGenerator', () => {
     contract: 'ERC20Token',
     network: 'mainnet',
     version: '1.0.0',
-    syncedAt: '2025-01-01T12:00:00Z',
-    status: 'synced',
+    chainId: 1,
     address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     abi: [
       {
@@ -36,7 +35,7 @@ describe('CodeGenerator', () => {
       const generator = new CodeGenerator(true)
       const files = generator.generateFiles([mockAbi])
 
-      expect(files).toHaveLength(3) // abi file, index file, types file
+      expect(files).toHaveLength(4) // abi file, index file, types file, registry file
     })
 
     it('should generate ABI file with correct structure', () => {
@@ -89,7 +88,7 @@ describe('CodeGenerator', () => {
       const generator = new CodeGenerator(false)
       const files = generator.generateFiles([mockAbi])
 
-      expect(files).toHaveLength(2) // abi file, index file (no types file for JS)
+      expect(files).toHaveLength(3) // abi file, index file, registry file (no types file for JS)
     })
 
     it('should generate ABI file without "as const"', () => {
@@ -198,13 +197,14 @@ describe('CodeGenerator', () => {
       const files = generator.generateFiles([mockAbi])
 
       const abiFile = files.find((f) => f.path.includes('erc20-token'))
-      expect(abiFile!.content).toContain('erc20TokenChainId = 1')
+      expect(abiFile!.content).toContain('ChainId = 1')
     })
 
     it('should map polygon to chain ID 137', () => {
       const polygonAbi: AbiItem = {
         ...mockAbi,
         network: 'polygon',
+        chainId: 137,
       }
 
       const generator = new CodeGenerator(true)
@@ -218,6 +218,7 @@ describe('CodeGenerator', () => {
       const numericAbi: AbiItem = {
         ...mockAbi,
         network: '42161',
+        chainId: 42161,
       }
 
       const generator = new CodeGenerator(true)
