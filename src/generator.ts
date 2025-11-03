@@ -47,7 +47,7 @@ export class CodeGenerator {
      */
     private generateAbiFile(abi: AbiItem, includeNetworkSuffix = false): GeneratedFile {
         const baseName = this.sanitizeFileName(abi.contract)
-        const fileName = includeNetworkSuffix 
+        const fileName = includeNetworkSuffix
             ? `${baseName}-${abi.network.toLowerCase()}`
             : baseName
         const ext = this.typescript ? '.ts' : '.js'
@@ -125,7 +125,7 @@ export const ${this.sanitizeVariableName(abi.contract)}${varNameSuffix}Config = 
             const duplicates = contractNames.get(abi.contract) || []
             const needsNetworkSuffix = duplicates.length > 1
             const baseName = this.sanitizeFileName(abi.contract)
-            const fileName = needsNetworkSuffix 
+            const fileName = needsNetworkSuffix
                 ? `${baseName}-${abi.network.toLowerCase()}`
                 : baseName
             return `export * from './${fileName}'`
@@ -157,7 +157,7 @@ export { contracts } from './registry'
             const needsNetworkSuffix = duplicates.length > 1
             const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
             const baseName = this.sanitizeFileName(abi.contract)
-            const fileName = needsNetworkSuffix 
+            const fileName = needsNetworkSuffix
                 ? `${baseName}-${abi.network.toLowerCase()}`
                 : baseName
             const varName = this.sanitizeVariableName(abi.contract)
@@ -238,7 +238,7 @@ ${abis.map((abi) => {
         // Group ABIs by network
         const byNetwork = new Map<string, Map<string, AbiItem>>()
         const chainIds = new Set<number>()
-        
+
         for (const abi of abis) {
             const network = abi.network.toLowerCase()
             if (!byNetwork.has(network)) {
@@ -268,7 +268,7 @@ ${abis.map((abi) => {
             const needsNetworkSuffix = duplicates.length > 1
             const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
             const baseName = this.sanitizeFileName(abi.contract)
-            const fileName = needsNetworkSuffix 
+            const fileName = needsNetworkSuffix
                 ? `${baseName}-${abi.network.toLowerCase()}`
                 : baseName
             const varName = this.sanitizeVariableName(abi.contract)
@@ -384,7 +384,7 @@ export function getContractDeployments(contractName: string) {
             const needsNetworkSuffix = duplicates.length > 1
             const varNameSuffix = needsNetworkSuffix ? this.capitalizeFirst(abi.network) : ''
             const baseName = this.sanitizeFileName(abi.contract)
-            const fileName = needsNetworkSuffix 
+            const fileName = needsNetworkSuffix
                 ? `${baseName}-${abi.network.toLowerCase()}`
                 : baseName
             const varName = this.sanitizeVariableName(abi.contract)

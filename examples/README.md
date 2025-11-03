@@ -9,7 +9,7 @@ To make imports cleaner, add this alias to your `package.json`:
 ```json
 {
   "imports": {
-    "#abiregistry/*": "./abiregistry/*"
+    "#contracts/*": "./examples/*"
   }
 }
 ```
@@ -20,7 +20,7 @@ Or in your `tsconfig.json`:
 {
   "compilerOptions": {
     "paths": {
-      "@abiregistry/*": ["./abiregistry/*"]
+      "@contracts/*": ["./examples/*"]
     }
   }
 }
@@ -29,19 +29,20 @@ Or in your `tsconfig.json`:
 Then import like:
 
 ```typescript
-import { erc20TokenConfig } from '@abiregistry/erc20-token'
+import { contracts } from '@contracts/registry'
 // instead of
-import { erc20TokenConfig } from './abiregistry/erc20-token'
+import { contracts } from './examples/registry'
 ```
 
 ## Files
 
 ### Generated Files
 
-Example output from `pullAndGenerate()`:
+Example output from `pullAndGenerate()` or `fetch`:
 
 - **`erc20-token.ts`** - ERC20 token contract with full type safety
-- **`index.ts`** - Re-exports all generated contracts
+- **`registry.ts`** - 🆕 Typed mapping object (contracts.mainnet.ERC20Token or contracts[1].ERC20Token)
+- **`index.ts`** - Re-exports all generated contracts + registry
 - **`types.ts`** - TypeScript type definitions
 
 ### Usage Examples
@@ -49,6 +50,53 @@ Example output from `pullAndGenerate()`:
 - **`usage-sdk.ts`** - SDK methods (push, pull, pullAndGenerate)
 - **`usage-viem.ts`** - Using generated files with Viem
 - **`usage-ethers.ts`** - Using generated files with Ethers.js
+
+## Using the Registry
+
+The `registry.ts` file provides a typed mapping for easy contract access:
+
+```typescript
+import { contracts, getContract } from './examples/registry'
+
+// Access by network name
+const token = contracts.mainnet.ERC20Token
+
+// Access by chain ID  
+const sameToken = contracts[1].ERC20Token
+
+// Type-safe helper
+const config = getContract('mainnet', 'ERC20Token')
+
+// Use with Viem
+const balance = await client.readContract({
+  ...contracts.mainnet.ERC20Token,
+  functionName: 'balanceOf',
+  args: [address]
+})
+```
+
+### Multi-Network Contracts
+
+When you have the same contract on different networks (e.g., upgradeable contracts):
+
+```typescript
+// Files generated:
+// - my-token-mainnet.ts
+// - my-token-sepolia.ts
+// - my-token-polygon.ts
+
+import { contracts } from './examples/registry'
+
+// Each network has its own ABI (important for upgraded contracts!)
+contracts.mainnet.MyToken  // v1.0.0 ABI
+contracts.sepolia.MyToken  // v2.0.0 ABI with new functions
+contracts.polygon.MyToken  // v2.0.0 ABI
+
+// Or by chain ID
+contracts[1].MyToken        // Mainnet
+contracts[11155111].MyToken // Sepolia
+contracts[137].MyToken      // Polygon
+```
 
 ## Running Examples
 

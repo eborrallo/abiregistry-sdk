@@ -59,6 +59,29 @@ await client.pullAndGenerate({
 })
 ```
 
+### Using Generated Files
+
+The SDK generates a typed registry for easy access:
+
+```typescript
+import { contracts } from './abiregistry/registry'
+
+// Access by network name
+const balance = await publicClient.readContract({
+  ...contracts.mainnet.USDC,
+  functionName: 'balanceOf',
+  args: [userAddress]
+})
+
+// Access by chain ID (same object)
+const sameContract = contracts[1].USDC
+
+// Works great with upgradeable contracts (different ABIs per network)
+contracts.mainnet.MyToken  // v1.0.0 ABI
+contracts.sepolia.MyToken  // v2.0.0 ABI (upgraded)
+contracts[137].MyToken     // Polygon deployment
+```
+
 ## Features
 
 - 🔍 **Fetch from Etherscan** - Automatically fetch ABIs from verified contracts

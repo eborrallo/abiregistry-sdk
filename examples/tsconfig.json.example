@@ -7,7 +7,8 @@
     "skipLibCheck": true,
     "strict": true,
     "paths": {
-      "@abiregistry/*": ["./abiregistry/*"]
+      "@contracts": ["./abiregistry/index.ts"],
+      "@contracts/*": ["./abiregistry/*"]
     }
   },
   "include": ["src/**/*", "abiregistry/**/*"],

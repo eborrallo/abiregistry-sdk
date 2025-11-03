@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "imports": {
-    "#abiregistry/*": "./abiregistry/*"
+    "#contracts": "./abiregistry/index.js",
+    "#contracts/*": "./abiregistry/*"
   },
   "scripts": {
-    "sync-abis": "tsx sync-abis.ts"
+    "abi:pull": "npx abiregistry pull",
+    "abi:fetch": "npx abiregistry fetch"
   },
   "dependencies": {
-    "@abiregistry/sdk": "^0.1.0"
+    "@abiregistry/sdk": "^0.1.0",
+    "viem": "^2.0.0"
   }
 }
 
