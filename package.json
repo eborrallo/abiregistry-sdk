@@ -1,6 +1,6 @@
 {
   "name": "@abiregistry/sdk",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Official SDK for ABI Registry - Push and pull smart contract ABIs seamlessly",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
