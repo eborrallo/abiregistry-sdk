@@ -9,10 +9,28 @@ export type ContractConfig = {
     isProxy?: boolean  // If true, fetch implementation ABI instead
 }
 
+export type FoundryContractConfig = {
+    name: string  // Contract name (e.g., "MyToken")
+    proxy?: {
+        implementation: string  // Implementation contract name if this is a proxy
+    }
+}
+
+export type FoundryDeployScript = {
+    name: string  // Script file name (e.g., "Deploy.s.sol")
+    contracts?: FoundryContractConfig[]  // Specific contracts to push from this script (if empty, push all)
+}
+
 export type FoundryConfig = {
-    scriptDir?: string  // Default script directory (e.g., "Deploy.s.sol")
+    // Single script (legacy support)
+    scriptDir?: string  // DEPRECATED: Use 'scripts' array instead
+
+    // Multiple scripts (new approach)
+    scripts?: FoundryDeployScript[]  // Array of deploy scripts to track
+
+    // Contract filtering (applies to all scripts if scripts don't specify their own)
+    // DEPRECATED: Use contracts array in scripts instead
     contracts?: string[]  // Specific contract names to push (if empty, push all)
-    version?: string  // Default version for ABIs
 }
 
 export type AbiRegistryCliConfig = {
@@ -141,9 +159,29 @@ export function createConfigFile(): void {
             },
         ],
         foundry: {
-            scriptDir: 'Deploy.s.sol',
-            contracts: [],  // Empty = push all deployed contracts
-            version: '1.0.0',
+            // Track multiple deploy scripts
+            scripts: [
+                {
+                    name: 'Deploy.s.sol',
+                    contracts: [
+                        { name: 'MyToken' },
+                        { name: 'MyNFT' },
+                        {
+                            name: 'TokenProxy',
+                            proxy: { implementation: 'TokenV1' },
+                        },
+                    ],
+                },
+                {
+                    name: 'DeployGovernance.s.sol',
+                    contracts: [
+                        {
+                            name: 'GovernanceProxy',
+                            proxy: { implementation: 'GovernanceV1' },
+                        },
+                    ],
+                },
+            ],
         },
     }
 
@@ -152,6 +190,52 @@ export function createConfigFile(): void {
     console.log('⚠️  Remember to set your API key via ABI_REGISTRY_API_KEY environment variable')
     console.log('💡 Add contracts to fetch from Etherscan in the "contracts" array')
     console.log('💡 Configure Foundry defaults in the "foundry" section')
+}
+
+/**
+ * Create a Foundry-specific config file with simple examples
+ */
+export function createFoundryConfigFile(): void {
+    const configPath = path.join(process.cwd(), CONFIG_FILE_NAME)
+
+    if (fs.existsSync(configPath)) {
+        console.error(`❌ Error: ${CONFIG_FILE_NAME} already exists`)
+        console.error('   Delete it first or edit it manually')
+        process.exit(1)
+    }
+
+    // Simple, easy-to-understand config for Foundry users
+    const foundryConfig = {
+        foundry: {
+            scripts: [
+                {
+                    name: 'Deploy.s.sol',
+                    contracts: [
+                        { name: 'MyToken' },
+                        { name: 'MyNFT' },
+                    ],
+                },
+            ],
+        },
+    }
+
+    fs.writeFileSync(configPath, JSON.stringify(foundryConfig, null, 2), 'utf-8')
+
+    console.log('✅ Created abiregistry.config.json for Foundry\n')
+    console.log('📝 Next steps:')
+    console.log('   1. Set your API key:')
+    console.log('      echo "ABI_REGISTRY_API_KEY=your-key" > .env')
+    console.log('      echo ".env" >> .gitignore\n')
+    console.log('   2. Update config with your deploy script names\n')
+    console.log('   3. Deploy with Foundry:')
+    console.log('      forge script Deploy.s.sol --broadcast --rpc-url $RPC_URL\n')
+    console.log('   4. Push ABIs to registry:')
+    console.log('      npx abiregistry foundry\n')
+    console.log('💡 Tips:')
+    console.log('   • Add more scripts to track multiple deployments')
+    console.log('   • Omit "contracts" array to push all contracts from a script')
+    console.log('   • For proxy contracts, add: { "name": "MyProxy", "proxy": { "implementation": "MyImpl" } }')
+    console.log('   • Multi-chain? Just deploy to multiple chains - SDK pushes all automatically!\n')
 }
 
 /**

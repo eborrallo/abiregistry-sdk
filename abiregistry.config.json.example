@@ -230,22 +230,104 @@
   // ==============================================================================
   // Configure Foundry deployment automation
   // Automatically push ABIs after running: forge script YourScript --broadcast
+  // 
+  // Features:
+  // - Track multiple deploy scripts
+  // - Filter specific contracts per script
+  // - Proxy support (automatically loads implementation ABI)
+  // - Multi-chain support (pushes all chain deployments automatically)
   // ==============================================================================
   "foundry": {
-    // Directory where Foundry stores broadcast files
-    // Default: broadcast/
-    "scriptDir": "broadcast",
+    // ──────────────────────────────────────────────────────────────────────────
+    // SCRIPTS CONFIGURATION
+    // ──────────────────────────────────────────────────────────────────────────
+    // Define which deploy scripts to track and which contracts to push
+    "scripts": [
+      // ────────────────────────────────────────────────────────────────────────
+      // Example 1: Main deployment script with regular and proxy contracts
+      // ────────────────────────────────────────────────────────────────────────
+      {
+        "name": "Deploy.s.sol",
+        "contracts": [
+          // Regular contract (no proxy)
+          { "name": "MyToken" },
+          { "name": "MyNFT" },
+          
+          // Proxy contract - SDK will load implementation ABI
+          {
+            "name": "TokenProxy",
+            "proxy": { "implementation": "TokenV1" }
+          }
+        ]
+      },
 
-    // Contract names to track (optional - if empty, tracks all contracts)
-    // Only contracts in this list will be pushed to the registry
-    "contracts": [
-      "MyToken",
-      "MyNFT",
-      "MyVault",
-      "MyGovernance"
+      // ────────────────────────────────────────────────────────────────────────
+      // Example 2: Governance deployment script
+      // ────────────────────────────────────────────────────────────────────────
+      {
+        "name": "DeployGovernance.s.sol",
+        "contracts": [
+          {
+            "name": "GovernanceProxy",
+            "proxy": { "implementation": "GovernorV1" }
+          },
+          { "name": "Timelock" }
+        ]
+      },
+
+      // ────────────────────────────────────────────────────────────────────────
+      // Example 3: Infrastructure deployment (push all contracts)
+      // ────────────────────────────────────────────────────────────────────────
+      {
+        "name": "DeployInfrastructure.s.sol"
+        // No "contracts" array = push ALL contracts from this script
+      }
     ]
-
-    // Note: Versions are auto-incremented (1, 2, 3, ...)
-    // Use --label flag to add custom labels: npx abiregistry foundry --label "v1.0-audit"
   }
+
+  // ============================================================================
+  // USAGE EXAMPLES
+  // ============================================================================
+  //
+  // 1. Single chain deployment:
+  //    forge script Deploy.s.sol --broadcast --rpc-url $SEPOLIA_RPC
+  //    npx abiregistry foundry
+  //
+  // 2. Multi-chain deployment (pushes ALL chains automatically):
+  //    forge script Deploy.s.sol --broadcast --rpc-url $MAINNET_RPC
+  //    forge script Deploy.s.sol --broadcast --rpc-url $SEPOLIA_RPC
+  //    forge script Deploy.s.sol --broadcast --rpc-url $POLYGON_RPC
+  //    npx abiregistry foundry
+  //    → Result: ABIs from all 3 chains pushed to registry ✅
+  //
+  // 3. With custom label:
+  //    npx abiregistry foundry --label "v1.0-audit"
+  //
+  // 4. Skip confirmation:
+  //    npx abiregistry foundry --yes
+  //
+  // ============================================================================
+  // BROADCAST FILE LOCATIONS
+  // ============================================================================
+  // Foundry stores broadcast files in two formats:
+  //
+  // 1. Older format:
+  //    broadcast/Deploy.s.sol/run-latest.json
+  //
+  // 2. Newer format (with chainId subfolder):
+  //    broadcast/Deploy.s.sol/11155111/run-latest.json
+  //    broadcast/Deploy.s.sol/1/run-latest.json
+  //    broadcast/Deploy.s.sol/137/run-latest.json
+  //
+  // The SDK automatically detects and processes ALL chains! ✅
+  //
+  // ============================================================================
+  // NOTES
+  // ============================================================================
+  // - Versions are auto-incremented (1, 2, 3, ...)
+  // - Labels are optional and can be set via --label flag
+  // - "latest" is a reserved label (cannot be used)
+  // - Proxy configuration maps proxy address to implementation ABI
+  // - Multi-chain deployments are processed automatically
+  //
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { loadConfig, validateConfig, createConfigFile } from './config'
+import { loadConfig, validateConfig, createConfigFile, createFoundryConfigFile, configFileExists } from './config'
 import { pullCommand } from './pull'
 import { fetchCommand } from './fetch'
 import { foundryPushCommand } from './foundry'
@@ -18,7 +18,8 @@ Commands:
   fetch               Fetch ABIs from Etherscan and generate files locally (NO API key needed)
   pull                Pull ABIs from registry and generate files (API key required)
   foundry             Push Foundry deployment artifacts from broadcast folder (API key required)
-  init                Create a config file (abiregistry.config.json)
+  foundry init        Create Foundry-specific config file (abiregistry.config.json)
+  init                Create a general config file (abiregistry.config.json)
   help                Show this help message
 
 Fetch Options (Etherscan → Local files):
@@ -66,10 +67,13 @@ Examples:
   # Pull ABIs from registry and generate TypeScript files (API key required)
   npx abiregistry pull
 
-  # Push Foundry deployment artifacts (API key required)
-  npx abiregistry foundry --script DeployScript.s.sol
-  npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json --label "Post-Audit"
-  npx abiregistry foundry --script DeployScript.s.sol --yes  # Skip confirmation
+  # Setup Foundry integration (REQUIRED before using foundry command)
+  npx abiregistry foundry init  # Creates abiregistry.config.json
+
+  # Push Foundry deployment artifacts (API key required, config file required)
+  npx abiregistry foundry                # Pushes all scripts from config
+  npx abiregistry foundry --label "v1.0" # With custom label
+  npx abiregistry foundry --yes          # Skip confirmation
 `)
 }
 
@@ -104,8 +108,14 @@ function parseArgs(): { command: string; options: Record<string, string | boolea
 async function main() {
     const { command, options } = parseArgs()
 
+    // Handle init commands
     if (command === 'init') {
         createConfigFile()
+        return
+    }
+
+    if (command === 'foundry' && args[1] === 'init') {
+        createFoundryConfigFile()
         return
     }
 
@@ -143,6 +153,16 @@ async function main() {
             }
 
             if (command === 'foundry') {
+                // Check if config file exists
+                if (!configFileExists()) {
+                    console.error('❌ Configuration file not found\n')
+                    console.error('The Foundry command requires a config file to specify which scripts and contracts to track.\n')
+                    console.error('Create one with:')
+                    console.error('  npx abiregistry foundry init\n')
+                    console.error('Then edit abiregistry.config.json with your deploy script names.')
+                    process.exit(1)
+                }
+
                 const scriptDir = typeof options.script === 'string' ? options.script : undefined
                 const filename = typeof options.file === 'string' ? options.file : undefined
                 const label = typeof options.label === 'string' ? options.label : undefined
