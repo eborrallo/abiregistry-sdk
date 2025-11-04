@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
-package-lock.json
+#package-lock.json
 yarn.lock
+pnpm-lock.yaml
 
 # Build outputs
 dist/
@@ -40,4 +41,3 @@ abiregistry.config.json
 # Test artifacts
 test-abis/
 
-packages/

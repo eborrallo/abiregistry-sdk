@@ -6,34 +6,51 @@ This directory contains automated workflows for the ABI Registry SDK.
 
 ### 📦 `publish.yml` - Publish to NPM
 
-Automatically publishes the SDK to NPM when a new version tag is pushed.
+**Triggers when you publish a draft release** - Publishes the SDK to NPM automatically.
 
 **Triggers:**
-- Push tags matching `v*` (e.g., `v0.1.3`, `v1.0.0`)
-- Manual workflow dispatch (Actions tab in GitHub)
+- When a **draft release** is **published** on GitHub
 
 **Steps:**
-1. Install dependencies
-2. Run tests
-3. Build package
-4. Publish to NPM
+1. ✅ Runs tests automatically
+2. ✅ Builds package
+3. ✅ Publishes to NPM
 
-**Usage:**
+**How to Publish:**
 
-```bash
-# 1. Update version in package.json
-npm version patch  # or minor, or major
+1. **Create a draft release** (Release Drafter does this automatically, or create manually):
+   - Go to repository → **Releases**
+   - Click **"Draft a new release"**
+   - Choose/create a tag (e.g., `v0.1.4`)
+   - Add release title: "Release v0.1.4"
+   - Add release notes (or use auto-generated from Release Drafter)
+   - Click **"Save draft"**
 
-# 2. Push the tag
-git push origin v0.1.4
+2. **Publish the release:**
+   - Go to repository → **Releases**
+   - Find your draft release
+   - Click **"Edit"**
+   - Click **"Publish release"** button
 
-# 3. GitHub Action will automatically publish to NPM
+3. **Workflow runs automatically:**
+   - Tests run ✅
+   - Package builds ✅
+   - Publishes to NPM ✅
+
+**What Happens:**
 ```
-
-**Manual Trigger:**
-1. Go to GitHub Actions tab
-2. Select "Publish SDK to NPM"
-3. Click "Run workflow"
+1. You click "Publish release" in GitHub UI
+   ↓
+2. Workflow triggers automatically
+   ↓
+3. Tests run ✅
+   ↓
+4. Package builds ✅
+   ↓
+5. Publishes to NPM ✅
+   ↓
+6. Users can install: npm install @abiregistry/sdk
+```
 
 **Required Secrets:**
 - `NPM_TOKEN` - Your NPM automation token
@@ -81,22 +98,41 @@ Add it to GitHub secrets:
 
 ### 2. Publishing Process
 
+**Recommended Workflow:**
+
 ```bash
-# Make your changes
+# 1. Make your changes and push to main
 git add .
 git commit -m "feat: add awesome feature"
-
-# Update version
-npm version patch  # Creates tag and updates package.json
-
-# Push changes and tag
 git push origin main
-git push origin --tags
 
+# 2. Release Drafter automatically creates a draft release
+
+# 3. Go to GitHub → Releases
+# 4. Find your draft release
+# 5. Click "Edit"
+# 6. Review release notes
+# 7. Update tag/version if needed (e.g., v0.1.4)
+# 8. Click "Publish release"
+# 
 # GitHub Action will automatically:
-# 1. Run tests
-# 2. Build the package
-# 3. Publish to NPM
+# ✅ Run tests
+# ✅ Build the package
+# ✅ Publish to NPM
+```
+
+**Manual Publish (if needed):**
+
+```bash
+# 1. Bump version locally
+npm version patch  # or minor, or major
+
+# 2. Push changes
+git push origin main --tags
+
+# 3. Create a release on GitHub with the tag
+
+# 4. Publish the release → triggers workflow
 ```
 
 ---

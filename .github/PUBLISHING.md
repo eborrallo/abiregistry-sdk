@@ -1,130 +1,296 @@
-# Publishing Guide
+# 📦 How to Publish the SDK to NPM
 
-Guide for maintainers on how to publish new versions of @abiregistry/sdk to NPM.
+Simple guide to publish `@abiregistry/sdk` using GitHub Releases.
 
-## Prerequisites
+---
 
-1. NPM account with publish permissions
-2. GitHub repository access
-3. NPM_TOKEN secret configured in GitHub repository settings
+## 🚀 Publishing Workflow
 
-## Setup NPM Token
+### **The Process:**
 
-1. Go to [npmjs.com](https://www.npmjs.com) and log in
-2. Navigate to Access Tokens: Settings → Access Tokens
-3. Click "Generate New Token" → "Classic Token"
-4. Select "Automation" type
-5. Copy the token
-6. Go to your GitHub repository: Settings → Secrets and variables → Actions
-7. Create new repository secret:
+```
+1. Push changes to main
+   ↓
+2. Release Drafter creates draft release (automatic)
+   ↓
+3. Review draft in GitHub Releases
+   ↓
+4. Click "Publish release"
+   ↓
+5. Workflow publishes to NPM (automatic)
+```
+
+---
+
+## 📋 Step-by-Step Guide
+
+### **Step 1: Push Your Changes**
+
+```bash
+git add .
+git commit -m "feat: add foundry init command"
+git push origin main
+```
+
+### **Step 2: Wait for Release Drafter**
+
+- Release Drafter runs automatically when you push to main
+- Creates or updates a **draft release**
+- Auto-generates release notes from your commits
+- Suggests the next version number
+
+### **Step 3: Go to Releases**
+
+1. Open your GitHub repository
+2. Click the **"Releases"** tab (right side)
+3. You'll see a draft release at the top
+
+### **Step 4: Edit the Draft**
+
+1. Click **"Edit"** on the draft release
+2. Review the auto-generated release notes
+3. Update the **tag** if needed:
+   - `v0.1.4` - Patch (bug fixes)
+   - `v0.2.0` - Minor (new features)
+   - `v1.0.0` - Major (breaking changes)
+4. Update the **title**: "Release v0.2.0"
+5. Add any additional notes or screenshots
+
+### **Step 5: Publish! 🎯**
+
+1. Uncheck **"Set as a pre-release"** (if checked)
+2. Click the big green **"Publish release"** button
+3. This triggers the publish workflow automatically!
+
+### **Step 6: Workflow Runs**
+
+Watch the progress (or wait for completion):
+
+```
+✅ Checkout code
+✅ Setup Node.js
+✅ Install dependencies
+✅ Run tests (all must pass!)
+✅ Build package
+✅ Publish to NPM
+```
+
+### **Step 7: Verify**
+
+Check that everything worked:
+
+1. **NPM:** https://www.npmjs.com/package/@abiregistry/sdk
+   - New version should appear
+   - Download stats update
+
+2. **GitHub Release:**
+   - Release is now public (not draft)
+   - Shows up in Releases tab
+
+3. **Test Installation:**
+   ```bash
+   npm install @abiregistry/sdk@latest
+   npx abiregistry --help
+   ```
+
+---
+
+## 🎯 Version Numbering Guide
+
+### **Semantic Versioning:**
+
+| Type | Current | Next | When to Use |
+|------|---------|------|-------------|
+| **Patch** | 0.1.2 | 0.1.3 | 🐛 Bug fixes, docs, cleanup |
+| **Minor** | 0.1.3 | 0.2.0 | ✨ New features (backward compatible) |
+| **Major** | 0.2.0 | 1.0.0 | 💥 Breaking changes |
+
+### **Examples:**
+
+**Patch (0.1.2 → 0.1.3):**
+- Fixed typo in error message
+- Updated README
+- Fixed broken CLI flag
+
+**Minor (0.1.3 → 0.2.0):**
+- Added `foundry init` command ✅
+- Added proxy support ✅
+- Added multi-chain support ✅
+
+**Major (0.2.0 → 1.0.0):**
+- Changed config file structure (breaking)
+- Removed deprecated commands
+- Changed API interface
+
+---
+
+## 🔐 One-Time Setup
+
+### **NPM Token:**
+
+1. **Create token on NPM:**
+   - Go to https://www.npmjs.com/
+   - Log in → Profile → **Access Tokens**
+   - Click **"Generate New Token"**
+   - Select **"Automation"** type
+   - Copy the token (starts with `npm_...`)
+
+2. **Add to GitHub:**
+   - GitHub repository → **Settings**
+   - **Secrets and variables** → **Actions**
+   - Click **"New repository secret"**
    - Name: `NPM_TOKEN`
-   - Value: (paste your NPM token)
+   - Value: (paste your token)
+   - Click **"Add secret"**
 
-## Publishing Process
+---
 
-### Automatic Publishing (Recommended)
+## 💡 Tips & Best Practices
 
-1. **Update version** in `package.json`:
-   ```bash
-   # For patch releases (bug fixes)
-   npm version patch
+### **Before Publishing:**
 
-   # For minor releases (new features)
-   npm version minor
-
-   # For major releases (breaking changes)
-   npm version major
-   ```
-
-2. **Push the tag**:
-   ```bash
-   git push && git push --tags
-   ```
-
-3. **Create a GitHub Release**:
-   - Go to: https://github.com/eborrallo/abiregistry-sdk/releases/new
-   - Select the tag you just pushed
-   - Title: `v0.1.0` (or whatever version)
-   - Description: List the changes (copy from CHANGELOG.md)
-   - Click "Publish release"
-
-4. **GitHub Actions will automatically**:
-   - Run all tests
-   - Run linter
-   - Build the package
-   - Publish to NPM
-
-### Manual Publishing (Not Recommended)
-
+✅ Run tests locally:
 ```bash
-# Login to NPM
-npm login
-
-# Build and test
-pnpm install
-pnpm test
-pnpm build
-
-# Publish
-pnpm publish --access public
+cd packages/sdk
+npm test
 ```
 
-## Version Guidelines
-
-Follow [Semantic Versioning](https://semver.org/):
-
-- **MAJOR** (1.0.0): Breaking changes
-- **MINOR** (0.1.0): New features, backwards compatible
-- **PATCH** (0.0.1): Bug fixes, backwards compatible
-
-## Pre-release Checklist
-
-Before creating a release:
-
-- [ ] All tests passing locally
-- [ ] Update CHANGELOG.md with changes
-- [ ] Update version in package.json
-- [ ] Update README.md if API changed
-- [ ] Build succeeds: `pnpm build`
-- [ ] Test coverage acceptable: `pnpm test:coverage`
-- [ ] No TypeScript errors: `pnpm lint`
-- [ ] All commits pushed to main
-
-## Post-release
-
-After successful publish:
-
-1. Verify package on NPM: https://www.npmjs.com/package/@abiregistry/sdk
-2. Test installation: `npm install @abiregistry/sdk@latest`
-3. Update documentation site if needed
-4. Announce on social media/Discord/etc.
-
-## Troubleshooting
-
-### Publish fails with "You do not have permission"
-
-- Ensure you're logged in to NPM with correct account
-- Verify NPM_TOKEN is set in GitHub secrets
-- Check token hasn't expired
-
-### Version already exists
-
-- You can't publish the same version twice
-- Increment version and try again
-
-### Tests fail in CI but pass locally
-
-- Check Node version matches
-- Verify all dependencies are in package.json
-- Check for environment-specific issues
-
-## Emergency Unpublish
-
-If you need to unpublish a broken version:
-
+✅ Build locally:
 ```bash
-npm unpublish @abiregistry/sdk@VERSION
+npm run build
 ```
 
-⚠️ **Warning**: You can only unpublish within 72 hours, and it's discouraged. Consider publishing a patch instead.
+✅ Test the CLI:
+```bash
+./dist/cli.js --help
+```
 
+✅ Update documentation if needed
+
+### **Choosing the Right Version:**
+
+- **v0.x.x** → Pre-release, can have breaking changes freely
+- **v1.0.0** → First stable release (use when API is stable)
+- **v1.x.x** → Stable versions, backward compatible only
+- **v2.0.0+** → Major versions with breaking changes
+
+### **Release Notes:**
+
+Release Drafter auto-generates notes, but you can enhance them:
+
+```markdown
+## 🚀 Features
+- Added `foundry init` command for easy setup
+- Added proxy contract support in Foundry integration
+- Added multi-chain deployment support
+
+## 🐛 Bug Fixes
+- Fixed broadcast file path detection
+
+## 📚 Documentation
+- Updated README with new examples
+- Added PUBLISHING.md guide
+```
+
+---
+
+## 📊 Workflow Overview
+
+### **What Happens:**
+
+```
+Your Action                    GitHub Actions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. git push origin main  ────→  Release Drafter runs
+                                 ├─ Analyzes commits
+                                 ├─ Suggests version
+                                 └─ Creates draft release
+
+2. GitHub → Releases
+   Review draft ✓
+   Update tag: v0.2.0
+   Click "Publish release"  ──→  Publish workflow triggers
+                                 ├─ npm ci
+                                 ├─ npm test
+                                 ├─ npm run build
+                                 └─ npm publish
+                                     ↓
+3. Package published! ✅   ←────  Published to NPM
+
+4. npm install @abiregistry/sdk
+   Users get new version! 🎉
+```
+
+---
+
+## ❌ Troubleshooting
+
+### **Tests Failed:**
+
+```
+Error: Tests must pass before publishing
+```
+
+**Solution:**
+- Fix the failing tests locally
+- Push the fixes to main
+- Create a new release (or edit the draft)
+- Publish again
+
+### **"Version already exists on NPM":**
+
+```
+Error: You cannot publish over previously published versions
+```
+
+**Solution:**
+- Update the tag to a higher version
+- Edit the release
+- Change tag from `v0.1.3` to `v0.1.4`
+- Publish again
+
+### **"NPM_TOKEN not set":**
+
+```
+Error: npm ERR! need auth
+```
+
+**Solution:**
+- Add NPM_TOKEN to GitHub secrets (see setup above)
+- Make sure it's an **Automation** token
+- Re-publish the release
+
+### **"Package not found after publishing":**
+
+**Wait a few minutes:**
+- NPM can take 1-2 minutes to update
+- Check again after a short wait
+
+---
+
+## 🎉 Success Checklist
+
+After publishing, verify:
+
+- [ ] NPM shows new version: https://www.npmjs.com/package/@abiregistry/sdk
+- [ ] GitHub release is published (not draft)
+- [ ] Git tag exists in repository
+- [ ] Can install: `npm install @abiregistry/sdk@latest`
+- [ ] CLI works: `npx abiregistry --help`
+- [ ] Documentation is up to date
+
+---
+
+## 📞 Need Help?
+
+- Check workflow logs in GitHub Actions
+- Review NPM package page
+- Check GitHub release status
+- Verify NPM_TOKEN is set correctly
+
+---
+
+**Publishing is now as simple as clicking "Publish release" in GitHub!** 🚀
+
+No command-line steps needed - just review and click!
