@@ -1,8 +1,10 @@
-name: Publish to NPM
+name: Publish SDK to NPM
 
 on:
-  release:
-    types: [released,edited]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -21,22 +23,17 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Run tests
-        run: pnpm test
+        run: npm test
 
       - name: Build package
-        run: pnpm build
+        run: npm run build
 
       - name: Publish to NPM
-        run: pnpm publish --access public --no-git-checks
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

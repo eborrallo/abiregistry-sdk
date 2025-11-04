@@ -11,16 +11,15 @@ categories:
       - 'fix'
       - 'bugfix'
       - 'bug'
+  - title: '📚 Documentation'
+    labels:
+      - 'documentation'
   - title: '🧰 Maintenance'
     labels:
       - 'chore'
       - 'dependencies'
-  - title: '📚 Documentation'
-    labels:
-      - 'documentation'
 
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
-
 change-title-escapes: '\<*_&'
 
 version-resolver:
@@ -44,5 +43,6 @@ template: |
 
   $CHANGES
 
-  **Full Changelog**: https://github.com/eborrallo/abiregistry-sdk/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+  ## Contributors
 
+  $CONTRIBUTORS
