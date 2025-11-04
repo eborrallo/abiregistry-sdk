@@ -139,68 +139,112 @@ Get your key at [https://etherscan.io/myapikey](https://etherscan.io/myapikey)
 
 Push Foundry deployment artifacts from the broadcast folder to the registry.
 
-#### Push Latest Deployment
+#### First Time Setup
+
+**REQUIRED before using the foundry command:**
 
 ```bash
-# With confirmation prompt
-npx abiregistry foundry --script DeployScript.s.sol
+# Initialize Foundry config
+npx abiregistry foundry init
+
+# This creates abiregistry.config.json with:
+{
+  "foundry": {
+    "scripts": [
+      {
+        "name": "Deploy.s.sol",
+        "contracts": [
+          { "name": "MyToken" },
+          { "name": "MyNFT" }
+        ]
+      }
+    ]
+  }
+}
+
+# Edit the file with your actual deploy script names
+```
+
+#### Push Deployments
+
+```bash
+# Push all scripts from config (with confirmation)
+npx abiregistry foundry
 
 # Add a label for this deployment
-npx abiregistry foundry --script DeployScript.s.sol --label "Post-Audit"
+npx abiregistry foundry --label "Post-Audit"
 
 # Skip confirmation (for automation)
-npx abiregistry foundry --script DeployScript.s.sol --yes
+npx abiregistry foundry --yes
+
+# Override config and push specific script
+npx abiregistry foundry --script DeployScript.s.sol
 ```
 
-Reads from `broadcast/DeployScript.s.sol/run-latest.json` and extracts deployed contract ABIs.
+#### Multi-Script Configuration
 
-#### Push Specific Broadcast
+Track multiple deploy scripts and proxy contracts:
 
-```bash
-npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json --label "Hotfix"
-```
-
-#### Use Config Defaults
-
-Create `abiregistry.config.json`:
 ```json
 {
   "foundry": {
-    "scriptDir": "DeployScript.s.sol",
-    "contracts": ["MyToken", "MyNFT"]
+    "scripts": [
+      {
+        "name": "Deploy.s.sol",
+        "contracts": [
+          { "name": "MyToken" },
+          { "name": "MyNFT" },
+          {
+            "name": "TokenProxy",
+            "proxy": { "implementation": "TokenV1" }
+          }
+        ]
+      },
+      {
+        "name": "DeployGovernance.s.sol",
+        "contracts": [
+          {
+            "name": "GovernanceProxy",
+            "proxy": { "implementation": "GovernorV1" }
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-Then run without flags:
-```bash
-npx abiregistry foundry
-```
-
 **How it works:**
-1. Parses the broadcast JSON file to find CREATE transactions
-2. Extracts deployment timestamps from Foundry data
-3. Calculates ABI hash for duplicate detection
-4. Filters contracts if specified in config (or pushes all)
-5. Loads ABIs from the `out/` folder for each deployed contract
-6. Shows confirmation table with contract details
-7. Pushes ABIs to the registry
-   - **Auto-increments version** (v1, v2, v3...)
-   - **Skips duplicates** automatically
-   - **Adds optional labels** for semantic meaning
+1. Reads all scripts from config (or specified with `--script` flag)
+2. For each script, searches for broadcast files:
+   - `broadcast/<script>/run-latest.json` (older format)
+   - `broadcast/<script>/<chainId>/run-latest.json` (newer format)
+   - Automatically detects and processes **ALL chains** 🌐
+3. Parses broadcast JSON to find CREATE transactions
+4. For each deployment:
+   - Checks if it's a proxy (loads implementation ABI if configured)
+   - Loads ABI from `out/` folder
+   - Calculates ABI hash for duplicate detection
+5. Shows confirmation table with all ABIs from all scripts/chains
+6. Pushes to registry with auto-incremented versions
 
 **Features:**
-- ✅ Versions auto-increment - you don't set them manually
-- ✅ Duplicate detection - same ABI won't create duplicate versions
-- ✅ Labels for context - "Production", "Staging", "Post-Audit", etc.
-- ✅ Label "latest" is reserved and cannot be used
-- ✅ Always shows what will be pushed before confirmation
-- ✅ Use `--yes` flag to skip confirmation (for automation)
+- ✅ **Multi-script support** - Track multiple deploy scripts
+- ✅ **Proxy support** - Automatically loads implementation ABI for proxies
+- ✅ **Multi-chain support** - Pushes all chain deployments automatically
+- ✅ **Versions auto-increment** - Server manages versions (1, 2, 3...)
+- ✅ **Duplicate detection** - Same ABI won't create duplicate versions
+- ✅ **Custom labels** - Add semantic meaning ("Production", "Staging", etc.)
+- ✅ **Label "latest"** is reserved and cannot be used
+- ✅ **Confirmation table** - Always shows what will be pushed
+- ✅ **Skip confirmation** - Use `--yes` flag for automation
+- ✅ **Smart path detection** - Handles both old and new Foundry broadcast formats
 
 **Requirements:**
-- Run `forge build` to compile contracts
-- Run `forge script <script> --broadcast` to deploy
-- Execute from your Foundry project root directory
+- ✅ Config file created with `npx abiregistry foundry init`
+- ✅ Run `forge build` to compile contracts
+- ✅ Run `forge script <script> --broadcast` to deploy
+- ✅ Execute from your Foundry project root directory
 
 ### `pull` - Download ABIs
 

@@ -47,11 +47,11 @@ All notable changes to the ABI Registry SDK will be documented in this file.
 - CLI usage guide (CLI.md)
 - Example folder with ERC20 reference
 - Integration examples (Viem, Ethers.js, Wagmi)
-- GitHub Actions workflow examples
+- Foundry integration guide
 
 ### Testing
 - Unit tests for all major components
-- Integration tests for workflows
+- Integration tests for core functionality
 - Mocked server responses
 - 84%+ code coverage
 - Vitest test runner

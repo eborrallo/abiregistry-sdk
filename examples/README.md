@@ -204,19 +204,21 @@ function Component() {
 
 ## Workflow
 
-1. **Smart Contract Team**: Push ABIs using the SDK or GitHub Action
-   ```typescript
-   await client.push({ contractName, address, chainId, abi })
+1. **Smart Contract Team**: Push ABIs using the SDK CLI
+   ```bash
+   npx abiregistry foundry  # Push from Foundry deployments
+   # or
+   npx abiregistry fetch --chain 1 --address 0x... --name MyContract
    ```
 
 2. **Frontend/Backend Team**: Pull ABIs and generate typed files
-   ```typescript
-   await client.pullAndGenerate({ outDir: 'src/contracts' })
+   ```bash
+   npx abiregistry pull
    ```
 
 3. **Use in Your App**: Import and use with full type safety
    ```typescript
-   import { myContractConfig } from 'src/contracts'
+   import { myContractConfig } from './abiregistry'
    ```
 
 ## Learn More

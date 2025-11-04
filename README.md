@@ -35,8 +35,11 @@ npx abiregistry fetch --chain 1 --address 0xProxyAddress... --name MyToken --pro
 # Or add contracts to abiregistry.config.json and run
 npx abiregistry fetch
 
+# Setup Foundry integration (first time only)
+npx abiregistry foundry init
+
 # Push Foundry deployments to registry
-npx abiregistry foundry --script Deploy.s.sol
+npx abiregistry foundry
 
 # Pull ABIs and generate TypeScript files
 npx abiregistry pull
@@ -212,28 +215,40 @@ Supported chains:
 
 #### `foundry`
 Push Foundry deployment artifacts to the registry:
+
+**First time setup:**
 ```bash
-# Push latest deployment (with confirmation)
-npx abiregistry foundry --script DeployScript.s.sol
+# Initialize Foundry config
+npx abiregistry foundry init
+
+# Edit abiregistry.config.json with your deploy scripts
+```
+
+**Usage:**
+```bash
+# Push all scripts from config (with confirmation)
+npx abiregistry foundry
 
 # Add a label for this deployment
-npx abiregistry foundry --script DeployScript.s.sol --label "Post-Audit"
+npx abiregistry foundry --label "Post-Audit"
 
 # Skip confirmation prompt
-npx abiregistry foundry --script DeployScript.s.sol --yes
+npx abiregistry foundry --yes
 
-# Push specific broadcast file
-npx abiregistry foundry --script DeployScript.s.sol --file run-1234.json
+# Override config and push specific script
+npx abiregistry foundry --script DeployScript.s.sol
 ```
 
 Features:
+- ✅ **Multi-script support** - Track multiple deploy scripts in config
+- ✅ **Proxy contract support** - Automatically loads implementation ABI for proxies
+- ✅ **Multi-chain support** - Detects and pushes all chain deployments automatically
 - ✅ Automatically reads from `broadcast/` folder and extracts deployed contract ABIs
 - ✅ Extracts deployment timestamps from Foundry broadcast data
-- ✅ Auto-increments version numbers (v1, v2, v3...)
+- ✅ Auto-increments version numbers (1, 2, 3...)
 - ✅ Detects and skips duplicate ABIs automatically
 - ✅ Shows confirmation table before pushing (use `--yes` to skip)
-- ✅ Filter contracts via config file
-- ✅ Use defaults from `abiregistry.config.json`
+- ✅ Smart broadcast path detection (handles both old and new Foundry formats)
 
 #### `pull`
 Pull ABIs and generate files:
@@ -287,27 +302,52 @@ ABI_REGISTRY_API_KEY="your-api-key" npx abiregistry fetch
 - `API_KEY` (fallback)
 
 **Config File (Optional):**
+
+Create with `npx abiregistry foundry init`, then customize:
+
 ```json
 {
-  "outDir": "abiregistry",
-  "contracts": [
-    {
-      "chain": 1,
-      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-      "name": "USDC"
-    }
-  ],
   "foundry": {
-    "scriptDir": "Deploy.s.sol",
-    "contracts": ["MyToken", "MyNFT"],
-    "version": "1.0.0"
+    "scripts": [
+      {
+        "name": "Deploy.s.sol",
+        "contracts": [
+          { "name": "MyToken" },
+          { "name": "MyNFT" },
+          {
+            "name": "TokenProxy",
+            "proxy": { "implementation": "TokenV1" }
+          }
+        ]
+      },
+      {
+        "name": "DeployGovernance.s.sol",
+        "contracts": [
+          {
+            "name": "GovernanceProxy",
+            "proxy": { "implementation": "GovernorV1" }
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-**Foundry Config Options:**
-- `scriptDir` - Default script directory (can be overridden with `--script`)
-- `contracts` - Array of contract names to push (empty = push all)
+**Foundry Config Structure:**
+- `scripts` - Array of deploy scripts to track
+  - `name` - Script file name (e.g., "Deploy.s.sol")
+  - `contracts` - Array of contracts to push from this script (optional)
+    - `name` - Contract name
+    - `proxy` - Proxy configuration (optional)
+      - `implementation` - Implementation contract name to load ABI from
+
+**Features:**
+- ✅ Track multiple deploy scripts
+- ✅ Filter specific contracts per script
+- ✅ Inline proxy configuration
+- ✅ Multi-chain support (automatically pushes all chain deployments)
+- ✅ Omit `contracts` array to push all contracts from a script
 
 **Note:** Versions are auto-incremented by the server (1, 2, 3...). Use `--label` to add semantic meaning.
 
