@@ -1,0 +1,30 @@
+{
+  "transactions": [
+    {
+      "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      "transactionType": "CREATE",
+      "contractName": "SimpleToken",
+      "contractAddress": "0x1234567890123456789012345678901234567890",
+      "function": null,
+      "arguments": null,
+      "transaction": {
+        "from": "0x742d35cc6634c0532925a3b844bc9e7595f0beb4",
+        "gas": "0x1e8480",
+        "value": "0x0",
+        "input": "0x608060405234801561001057600080fd5b50",
+        "nonce": "0x1",
+        "chainId": "0xaa36a7"
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [],
+  "returns": {},
+  "timestamp": 1700000000000,
+  "chain": 11155111,
+  "commit": "abc123"
+}
+

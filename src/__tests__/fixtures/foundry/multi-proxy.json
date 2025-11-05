@@ -1,0 +1,52 @@
+{
+  "transactions": [
+    {
+      "transactionType": "CREATE",
+      "contractName": "TokenImplementation",
+      "contractAddress": "0x1111111111111111111111111111111111111111",
+      "function": null
+    },
+    {
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xfactory1111111111111111111111111111111111",
+      "function": "deployProxy(address)",
+      "additionalContracts": [
+        {
+          "transactionType": "CREATE",
+          "contractName": null,
+          "address": "0xproxy111111111111111111111111111111111111",
+          "initCode": "0x607f3d8160093d39f33d3d3373"
+        }
+      ]
+    },
+    {
+      "transactionType": "CREATE",
+      "contractName": "GovernorImplementation",
+      "contractAddress": "0x2222222222222222222222222222222222222222",
+      "function": null
+    },
+    {
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0xfactory2222222222222222222222222222222222",
+      "function": "deployProxy(address)",
+      "additionalContracts": [
+        {
+          "transactionType": "CREATE",
+          "contractName": null,
+          "address": "0xproxy222222222222222222222222222222222222",
+          "initCode": "0x607f3d8160093d39f33d3d3374"
+        }
+      ]
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [],
+  "returns": {},
+  "timestamp": 1700000000000,
+  "chain": 1,
+  "commit": "multi123"
+}
+

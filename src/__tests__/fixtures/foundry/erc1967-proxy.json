@@ -1,0 +1,66 @@
+{
+  "transactions": [
+    {
+      "hash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "transactionType": "CREATE",
+      "contractName": "TokenImplementation",
+      "contractAddress": "0x1111111111111111111111111111111111111111",
+      "function": null,
+      "arguments": null,
+      "transaction": {
+        "from": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "gas": "0x47e0a9",
+        "value": "0x0",
+        "input": "0x60a080604052346099573060805263409feecd",
+        "nonce": "0x1",
+        "chainId": "0xaa36a7"
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    },
+    {
+      "hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0x2222222222222222222222222222222222222222",
+      "function": "deployAndCall(address,address,bytes)",
+      "arguments": [
+        "0x1111111111111111111111111111111111111111",
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "0xc4d66de8000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "transaction": {
+        "from": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "to": "0x2222222222222222222222222222222222222222",
+        "gas": "0xd63f3",
+        "value": "0x0",
+        "input": "0x4314f12000000000000000000000000011111111111111111111111111111111111111",
+        "nonce": "0x2",
+        "chainId": "0xaa36a7"
+      },
+      "additionalContracts": [
+        {
+          "transactionType": "CREATE",
+          "contractName": null,
+          "address": "0x3333333333333333333333333333333333333333",
+          "initCode": "0x607f3d8160093d39f33d3d33733fa745a416b988b413eac569da99cc2f881f5362"
+        },
+        {
+          "transactionType": "CREATE",
+          "contractName": "HelperContract",
+          "address": "0x4444444444444444444444444444444444444444",
+          "initCode": "0x60a06040523461010057604051601f6108df38819003918201601f19168301916001600160401b038311848410176100ec5780849260209460405283398101031261010057516001600160a01b03811680820361010057"
+        }
+      ],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [],
+  "returns": {},
+  "timestamp": 1700000000000,
+  "chain": 11155111,
+  "commit": "test123"
+}
+

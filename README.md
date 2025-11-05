@@ -241,7 +241,8 @@ npx abiregistry foundry --script DeployScript.s.sol
 
 Features:
 - ✅ **Multi-script support** - Track multiple deploy scripts in config
-- ✅ **Proxy contract support** - Automatically loads implementation ABI for proxies
+- ✅ **Auto-detect ERC1967 proxies** - Automatically detects and maps proxy deployments
+- ✅ **Manual proxy configuration** - Specify proxy implementations in config when needed
 - ✅ **Multi-chain support** - Detects and pushes all chain deployments automatically
 - ✅ Automatically reads from `broadcast/` folder and extracts deployed contract ABIs
 - ✅ Extracts deployment timestamps from Foundry broadcast data
@@ -339,15 +340,24 @@ Create with `npx abiregistry foundry init`, then customize:
   - `name` - Script file name (e.g., "Deploy.s.sol")
   - `contracts` - Array of contracts to push from this script (optional)
     - `name` - Contract name
-    - `proxy` - Proxy configuration (optional)
+    - `proxy` - Proxy configuration (optional, but auto-detected for ERC1967)
       - `implementation` - Implementation contract name to load ABI from
 
 **Features:**
 - ✅ Track multiple deploy scripts
 - ✅ Filter specific contracts per script
-- ✅ Inline proxy configuration
+- ✅ **Auto-detects ERC1967 proxies** (no manual config needed!)
+- ✅ Manual proxy configuration for complex cases
 - ✅ Multi-chain support (automatically pushes all chain deployments)
 - ✅ Omit `contracts` array to push all contracts from a script
+
+**Proxy Detection:**
+The SDK automatically detects ERC1967 proxies by analyzing the broadcast file structure. When a proxy is deployed, it will:
+1. Detect the proxy address from `additionalContracts`
+2. Map it to the implementation contract
+3. Load the implementation ABI for the proxy address
+
+Manual proxy configuration is only needed for non-standard proxy patterns.
 
 **Note:** Versions are auto-incremented by the server (1, 2, 3...). Use `--label` to add semantic meaning.
 

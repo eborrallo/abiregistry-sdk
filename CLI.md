@@ -230,7 +230,8 @@ Track multiple deploy scripts and proxy contracts:
 
 **Features:**
 - ✅ **Multi-script support** - Track multiple deploy scripts
-- ✅ **Proxy support** - Automatically loads implementation ABI for proxies
+- ✅ **Auto-detect ERC1967 proxies** - Automatically detects and maps proxy deployments
+- ✅ **Manual proxy configuration** - Specify implementations for non-standard proxies
 - ✅ **Multi-chain support** - Pushes all chain deployments automatically
 - ✅ **Versions auto-increment** - Server manages versions (1, 2, 3...)
 - ✅ **Duplicate detection** - Same ABI won't create duplicate versions
@@ -239,6 +240,41 @@ Track multiple deploy scripts and proxy contracts:
 - ✅ **Confirmation table** - Always shows what will be pushed
 - ✅ **Skip confirmation** - Use `--yes` flag for automation
 - ✅ **Smart path detection** - Handles both old and new Foundry broadcast formats
+
+**ERC1967 Proxy Auto-Detection:**
+
+The SDK automatically detects ERC1967 proxies in your broadcast files! When you deploy a proxy:
+
+```bash
+forge script Deploy.s.sol --broadcast
+npx abiregistry foundry
+```
+
+The SDK will:
+1. Detect proxy deployments in `additionalContracts`
+2. Map the proxy address to the implementation contract
+3. Automatically push the proxy with the implementation ABI
+4. Name it `{ImplementationName}Proxy` (e.g., `kMinterProxy`)
+
+**Manual Configuration** (only for non-standard proxies):
+
+If you have a custom proxy pattern, you can still configure it manually:
+
+```json
+{
+  "foundry": {
+    "scripts": [{
+      "name": "Deploy.s.sol",
+      "contracts": [
+        {
+          "name": "CustomProxy",
+          "proxy": { "implementation": "MyImplementation" }
+        }
+      ]
+    }]
+  }
+}
+```
 
 **Requirements:**
 - ✅ Config file created with `npx abiregistry foundry init`
