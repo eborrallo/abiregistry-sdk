@@ -147,7 +147,25 @@ Push Foundry deployment artifacts from the broadcast folder to the registry.
 # Initialize Foundry config
 npx abiregistry foundry init
 
-# This creates abiregistry.config.json with:
+# 🎯 Smart Auto-Generation:
+# If you have existing broadcasts, the SDK will:
+#   ✅ Scan your broadcast/ folder
+#   ✅ Discover all deploy scripts
+#   ✅ Detect all contracts (including proxies!)
+#   ✅ Auto-generate the config for you!
+
+# Example output:
+# 🔍 Scanning for existing Foundry deployments...
+# 
+# ✅ Found 2 deploy script(s) with existing broadcasts:
+#    📜 Deploy.s.sol
+#       3 contract(s), 1 proxy/proxies
+#    📜 DeployGovernance.s.sol
+#       2 contract(s), 1 proxy/proxies
+#
+# ✅ Auto-generated config from your existing deployments!
+
+# If no broadcasts exist, creates a template:
 {
   "foundry": {
     "scripts": [
@@ -161,8 +179,6 @@ npx abiregistry foundry init
     ]
   }
 }
-
-# Edit the file with your actual deploy script names
 ```
 
 #### Push Deployments

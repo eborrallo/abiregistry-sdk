@@ -193,9 +193,10 @@ export function createConfigFile(): void {
 }
 
 /**
- * Create a Foundry-specific config file with simple examples
+ * Create a Foundry-specific config file
+ * Auto-generates from existing broadcast files if available, otherwise uses template
  */
-export function createFoundryConfigFile(): void {
+export async function createFoundryConfigFile(): Promise<void> {
     const configPath = path.join(process.cwd(), CONFIG_FILE_NAME)
 
     if (fs.existsSync(configPath)) {
@@ -204,37 +205,87 @@ export function createFoundryConfigFile(): void {
         process.exit(1)
     }
 
-    // Simple, easy-to-understand config for Foundry users
-    const foundryConfig = {
-        foundry: {
-            scripts: [
-                {
-                    name: 'Deploy.s.sol',
-                    contracts: [
-                        { name: 'MyToken' },
-                        { name: 'MyNFT' },
-                    ],
-                },
-            ],
-        },
+    // Try to auto-generate from existing broadcasts
+    console.log('🔍 Scanning for existing Foundry deployments...\n')
+    
+    const { FileSystemService } = await import('./services/FileSystemService')
+    const { BroadcastParserService } = await import('./services/BroadcastParserService')
+    const { BroadcastScannerService } = await import('./services/BroadcastScannerService')
+    
+    const fsService = new FileSystemService()
+    const parserService = new BroadcastParserService(fsService)
+    const scannerService = new BroadcastScannerService(fsService, parserService)
+    
+    const discoveredScripts = await scannerService.scanBroadcastFolder()
+
+    let foundryConfig: any
+
+    if (discoveredScripts.length > 0) {
+        // Auto-generated from broadcasts
+        console.log(`✅ Found ${discoveredScripts.length} deploy script(s) with existing broadcasts:\n`)
+        
+        for (const script of discoveredScripts) {
+            const contractCount = script.contracts.length
+            const proxyCount = script.contracts.filter(c => c.proxy).length
+            console.log(`   📜 ${script.scriptName}`)
+            console.log(`      ${contractCount} contract(s)${proxyCount > 0 ? `, ${proxyCount} proxy/proxies` : ''}`)
+        }
+        
+        console.log('')
+
+        foundryConfig = {
+            foundry: {
+                scripts: discoveredScripts.map(script => ({
+                    name: script.scriptName,
+                    contracts: script.contracts
+                }))
+            }
+        }
+
+        console.log('✅ Auto-generated config from your existing deployments!\n')
+    } else {
+        // No broadcasts found, use template
+        console.log('ℹ️  No existing broadcasts found - creating template config\n')
+        
+        foundryConfig = {
+            foundry: {
+                scripts: [
+                    {
+                        name: 'Deploy.s.sol',
+                        contracts: [
+                            { name: 'MyToken' },
+                            { name: 'MyNFT' },
+                        ],
+                    },
+                ],
+            },
+        }
     }
 
     fs.writeFileSync(configPath, JSON.stringify(foundryConfig, null, 2), 'utf-8')
 
-    console.log('✅ Created abiregistry.config.json for Foundry\n')
+    console.log('✅ Created abiregistry.config.json\n')
     console.log('📝 Next steps:')
     console.log('   1. Set your API key:')
     console.log('      echo "ABI_REGISTRY_API_KEY=your-key" > .env')
     console.log('      echo ".env" >> .gitignore\n')
-    console.log('   2. Update config with your deploy script names\n')
-    console.log('   3. Deploy with Foundry:')
-    console.log('      forge script Deploy.s.sol --broadcast --rpc-url $RPC_URL\n')
-    console.log('   4. Push ABIs to registry:')
-    console.log('      npx abiregistry foundry\n')
+    
+    if (discoveredScripts.length > 0) {
+        console.log('   2. Review the auto-generated config (edit if needed)\n')
+        console.log('   3. Push your existing deployments:')
+        console.log('      npx abiregistry foundry\n')
+    } else {
+        console.log('   2. Update config with your deploy script names\n')
+        console.log('   3. Deploy with Foundry:')
+        console.log('      forge script Deploy.s.sol --broadcast --rpc-url $RPC_URL\n')
+        console.log('   4. Push ABIs to registry:')
+        console.log('      npx abiregistry foundry\n')
+    }
+    
     console.log('💡 Tips:')
+    console.log('   • ERC1967 proxies are auto-detected - no manual config needed!')
     console.log('   • Add more scripts to track multiple deployments')
     console.log('   • Omit "contracts" array to push all contracts from a script')
-    console.log('   • For proxy contracts, add: { "name": "MyProxy", "proxy": { "implementation": "MyImpl" } }')
     console.log('   • Multi-chain? Just deploy to multiple chains - SDK pushes all automatically!\n')
 }
 

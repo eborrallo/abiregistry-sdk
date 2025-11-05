@@ -115,7 +115,7 @@ async function main() {
     }
 
     if (command === 'foundry' && args[1] === 'init') {
-        createFoundryConfigFile()
+        await createFoundryConfigFile()
         return
     }
 

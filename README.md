@@ -221,7 +221,8 @@ Push Foundry deployment artifacts to the registry:
 # Initialize Foundry config
 npx abiregistry foundry init
 
-# Edit abiregistry.config.json with your deploy scripts
+# If you have existing broadcasts, config is auto-generated!
+# Otherwise, edit abiregistry.config.json with your deploy scripts
 ```
 
 **Usage:**
@@ -350,6 +351,13 @@ Create with `npx abiregistry foundry init`, then customize:
 - ✅ Manual proxy configuration for complex cases
 - ✅ Multi-chain support (automatically pushes all chain deployments)
 - ✅ Omit `contracts` array to push all contracts from a script
+
+**Smart Configuration:**
+When you run `npx abiregistry foundry init`, the SDK:
+1. **Scans your `broadcast/` folder** for existing deployments
+2. **Auto-generates config** from discovered scripts and contracts
+3. **Detects proxies automatically** and adds them to the config
+4. Falls back to template if no broadcasts found
 
 **Proxy Detection:**
 The SDK automatically detects ERC1967 proxies by analyzing the broadcast file structure. When a proxy is deployed, it will:
