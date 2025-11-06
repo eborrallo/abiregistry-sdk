@@ -106,6 +106,8 @@ contracts[137].MyToken      // Polygon deployment
 - 🔍 **Fetch from Etherscan** - Automatically fetch ABIs from verified contracts (NO API key needed!)
 - 🔓 **Proxy Contract Support** - Automatically fetch implementation ABIs for proxy contracts
 - 🔨 **Foundry Integration** - Push deployment artifacts directly from Foundry broadcast folder
+- 🔮 **ERC-1967 Auto-Detection** - Zero-config proxy detection for OpenZeppelin & compatible proxies
+- 💎 **EIP-2535 Diamond Support** - Merge multiple interface ABIs for Diamond contracts
 - 📦 **Pull ABIs** - Download all ABIs from your project
 - 🎯 **TypeScript Generation** - Auto-generate typed contract files with full type safety
 - 📁 **Smart Grouping** - Identical ABIs deployed to multiple addresses automatically grouped
@@ -244,6 +246,7 @@ Features:
 - ✅ **Multi-script support** - Track multiple deploy scripts in config
 - ✅ **Auto-detect ERC1967 proxies** - Automatically detects and maps proxy deployments
 - ✅ **Manual proxy configuration** - Specify proxy implementations in config when needed
+- ✅ **EIP-2535 Diamond support** - Merge multiple interface ABIs for Diamond contracts
 - ✅ **Multi-chain support** - Detects and pushes all chain deployments automatically
 - ✅ Automatically reads from `broadcast/` folder and extracts deployed contract ABIs
 - ✅ Extracts deployment timestamps from Foundry broadcast data
@@ -341,8 +344,90 @@ Create with `npx abiregistry foundry init`, then customize:
   - `name` - Script file name (e.g., "Deploy.s.sol")
   - `contracts` - Array of contracts to push from this script (optional)
     - `name` - Contract name
-    - `proxy` - Proxy configuration (optional, but auto-detected for ERC1967)
+    - `proxy` - Proxy configuration (optional, but auto-detected for ERC-1967)
       - `implementation` - Implementation contract name to load ABI from
+      - `interfaces` - Array of interface names to merge for EIP-2535 Diamond contracts
+
+---
+
+### **Proxy Pattern Support**
+
+#### **ERC-1967 Transparent Proxy (Auto-Detected) ✨**
+
+The SDK **automatically detects** [ERC-1967](https://eip.tools/eip/1967) proxies in your Foundry broadcasts - **zero configuration needed!**
+
+**How it works:**
+1. SDK scans broadcast transactions for `CALL` operations with small `initCode`
+2. Links the proxy address to the previous `CREATE` transaction (the implementation)
+3. Automatically loads the implementation ABI for the proxy address
+4. Names it `{ImplementationName}Proxy` in the registry
+
+**Example broadcast pattern:**
+```json
+// 1. Deploy implementation
+{ "transactionType": "CREATE", "contractName": "TokenV1", "address": "0x1111..." }
+
+// 2. Deploy proxy (auto-detected by SDK!)
+{
+  "transactionType": "CALL",
+  "additionalContracts": [{
+    "address": "0x2222...",  // ← Proxy address
+    "initCode": "0x607f3d..."  // ← Small init code (ERC-1967 pattern)
+  }]
+}
+```
+
+**Result:** SDK automatically creates `TokenV1Proxy` with the `TokenV1` ABI at address `0x2222...`
+
+**Manual override** (only if needed):
+```json
+{
+  "foundry": {
+    "scripts": [{
+      "name": "Deploy.s.sol",
+      "contracts": [{
+        "name": "CustomProxyName",
+        "proxy": { "implementation": "TokenV1" }
+      }]
+    }]
+  }
+}
+```
+
+---
+
+#### **EIP-2535 Diamond Standard Support:**
+
+For Diamond contracts, you can merge multiple interface ABIs:
+
+```json
+{
+  "foundry": {
+    "scripts": [
+      {
+        "name": "DeployDiamond.s.sol",
+        "contracts": [
+          {
+            "name": "DiamondProxy",
+            "proxy": {
+              "implementation": "Diamond",
+              "interfaces": ["IDiamondLoupe", "IOwnership", "IMyFacet"]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The SDK will:
+1. Load the `Diamond` implementation ABI
+2. Load each interface ABI from `out/` folder
+3. Merge all ABIs intelligently (removing duplicates)
+4. Push the complete merged ABI to the registry
+
+This is perfect for [EIP-2535 Diamond contracts](https://eip.tools/eip/2535) where the proxy combines multiple facets!
 
 **Features:**
 - ✅ Track multiple deploy scripts

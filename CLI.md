@@ -471,6 +471,129 @@ npx abiregistry foundry --script Deploy.s.sol --yes
 
 ## Advanced Usage
 
+### Proxy Pattern Support
+
+#### ERC-1967 Transparent Proxy (Auto-Detected) ✨
+
+The SDK **automatically detects** [ERC-1967](https://eip.tools/eip/1967) standard proxies in your Foundry broadcasts with **zero configuration required!**
+
+**How Auto-Detection Works:**
+
+When you deploy with Foundry using proxy patterns (like OpenZeppelin's Transparent Proxy), the broadcast file contains a specific pattern:
+
+1. A `CREATE` transaction deploying the implementation contract
+2. A `CALL` transaction that deploys the proxy via a factory/deployer
+3. The proxy appears in `additionalContracts` with a small `initCode` (< 500 bytes)
+
+**Example from your broadcast:**
+```json
+{
+  "transactions": [
+    {
+      "transactionType": "CREATE",
+      "contractName": "TokenV1",
+      "contractAddress": "0x1111..."
+    },
+    {
+      "transactionType": "CALL",
+      "function": "deployAndCall(...)",
+      "additionalContracts": [{
+        "transactionType": "CREATE",
+        "contractName": null,
+        "address": "0x2222...",        // ← Proxy address
+        "initCode": "0x607f3d8160..."  // ← Small ERC-1967 proxy bytecode
+      }]
+    }
+  ]
+}
+```
+
+**What the SDK does automatically:**
+1. ✅ Detects the proxy pattern in broadcast
+2. ✅ Links proxy `0x2222...` to implementation `TokenV1`
+3. ✅ Loads `TokenV1` ABI from `out/` folder
+4. ✅ Creates entry named `TokenV1Proxy` with implementation ABI
+5. ✅ Pushes to registry with proxy address `0x2222...`
+
+**Console output:**
+```
+📜 Script: Deploy.s.sol
+   📄 Processing TokenV1...
+      ✅ ABI loaded from out/ folder
+
+   📄 Processing TokenV1Proxy...
+      🔄 Proxy detected - loading implementation: TokenV1
+      ✅ Implementation ABI loaded
+```
+
+**No config needed!** Just run:
+```bash
+npx abiregistry foundry
+```
+
+**Manual override** (only if auto-detection doesn't work):
+```json
+{
+  "foundry": {
+    "scripts": [{
+      "name": "Deploy.s.sol",
+      "contracts": [{
+        "name": "MyCustomProxyName",
+        "proxy": { "implementation": "TokenV1" }
+      }]
+    }]
+  }
+}
+```
+
+---
+
+### EIP-2535 Diamond Standard
+
+For Diamond contracts that use multiple facets, you can merge all interface ABIs:
+
+```json
+{
+  "foundry": {
+    "scripts": [
+      {
+        "name": "DeployDiamond.s.sol",
+        "contracts": [
+          {
+            "name": "DiamondProxy",
+            "proxy": {
+              "implementation": "Diamond",
+              "interfaces": ["IDiamondLoupe", "IOwnership", "IMyFacet"]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The SDK will automatically:
+1. Load the `Diamond` base implementation ABI
+2. Load each interface ABI from the `out/` folder
+3. Merge all ABIs intelligently (removing duplicate signatures)
+4. Push the complete merged ABI to the registry
+
+This is perfect for [EIP-2535 Diamond contracts](https://eip.tools/eip/2535) where you need the full interface including all facets!
+
+**Output example:**
+```
+📄 Processing DiamondProxy...
+   📍 Address: 0x1234...
+   🔄 Proxy detected - loading implementation: Diamond
+   💎 EIP-2535 Diamond detected - merging 3 interface(s)
+   📚 Loading interface: IDiamondLoupe
+   📚 Loading interface: IOwnership
+   📚 Loading interface: IMyFacet
+   ✅ Merged ABI: 25 total entries
+   ✅ Diamond ABI complete (implementation + 3 interfaces)
+```
+
 ### Using Config File + Environment Variables
 
 ```bash

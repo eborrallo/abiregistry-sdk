@@ -13,6 +13,7 @@ export type FoundryContractConfig = {
     name: string  // Contract name (e.g., "MyToken")
     proxy?: {
         implementation: string  // Implementation contract name if this is a proxy
+        interfaces?: string[]  // For EIP-2535 Diamond: additional interface contract names to merge into final ABI
     }
 }
 
@@ -170,6 +171,14 @@ export function createConfigFile(): void {
                             name: 'TokenProxy',
                             proxy: { implementation: 'TokenV1' },
                         },
+                        {
+                            // EIP-2535 Diamond: merge multiple interfaces into one ABI
+                            name: 'DiamondProxy',
+                            proxy: {
+                                implementation: 'Diamond',
+                                interfaces: ['IDiamondLoupe', 'IOwnership', 'IMyFacet'],
+                            },
+                        },
                     ],
                 },
                 {
@@ -207,15 +216,15 @@ export async function createFoundryConfigFile(): Promise<void> {
 
     // Try to auto-generate from existing broadcasts
     console.log('🔍 Scanning for existing Foundry deployments...\n')
-    
+
     const { FileSystemService } = await import('./services/FileSystemService')
     const { BroadcastParserService } = await import('./services/BroadcastParserService')
     const { BroadcastScannerService } = await import('./services/BroadcastScannerService')
-    
+
     const fsService = new FileSystemService()
     const parserService = new BroadcastParserService(fsService)
     const scannerService = new BroadcastScannerService(fsService, parserService)
-    
+
     const discoveredScripts = await scannerService.scanBroadcastFolder()
 
     let foundryConfig: any
@@ -223,14 +232,14 @@ export async function createFoundryConfigFile(): Promise<void> {
     if (discoveredScripts.length > 0) {
         // Auto-generated from broadcasts
         console.log(`✅ Found ${discoveredScripts.length} deploy script(s) with existing broadcasts:\n`)
-        
+
         for (const script of discoveredScripts) {
             const contractCount = script.contracts.length
             const proxyCount = script.contracts.filter(c => c.proxy).length
             console.log(`   📜 ${script.scriptName}`)
             console.log(`      ${contractCount} contract(s)${proxyCount > 0 ? `, ${proxyCount} proxy/proxies` : ''}`)
         }
-        
+
         console.log('')
 
         foundryConfig = {
@@ -246,7 +255,7 @@ export async function createFoundryConfigFile(): Promise<void> {
     } else {
         // No broadcasts found, use template
         console.log('ℹ️  No existing broadcasts found - creating template config\n')
-        
+
         foundryConfig = {
             foundry: {
                 scripts: [
@@ -269,7 +278,7 @@ export async function createFoundryConfigFile(): Promise<void> {
     console.log('   1. Set your API key:')
     console.log('      echo "ABI_REGISTRY_API_KEY=your-key" > .env')
     console.log('      echo ".env" >> .gitignore\n')
-    
+
     if (discoveredScripts.length > 0) {
         console.log('   2. Review the auto-generated config (edit if needed)\n')
         console.log('   3. Push your existing deployments:')
@@ -281,7 +290,7 @@ export async function createFoundryConfigFile(): Promise<void> {
         console.log('   4. Push ABIs to registry:')
         console.log('      npx abiregistry foundry\n')
     }
-    
+
     console.log('💡 Tips:')
     console.log('   • ERC1967 proxies are auto-detected - no manual config needed!')
     console.log('   • Add more scripts to track multiple deployments')

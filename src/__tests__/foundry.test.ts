@@ -711,4 +711,222 @@ describe('Foundry Service', () => {
             expect(mockConfirm).not.toHaveBeenCalled()
         })
     })
+
+    describe('EIP-2535 Diamond Standard', () => {
+        it('should merge multiple interface ABIs for Diamond contracts', async () => {
+            const broadcastData = {
+                transactions: [
+                    {
+                        transactionType: 'CREATE' as const,
+                        contractName: 'DiamondProxy',
+                        contractAddress: '0xDIAMOND',
+                        function: null
+                    }
+                ],
+                chain: 1,
+                timestamp: 1700000000000
+            }
+
+            // Mock ABIs for Diamond implementation and interfaces
+            const diamondAbi = [
+                { type: 'function', name: 'diamondCut', inputs: [{ type: 'address' }] },
+                { type: 'event', name: 'DiamondCut', inputs: [] }
+            ]
+
+            const loupeFacetAbi = [
+                { type: 'function', name: 'facets', inputs: [] },
+                { type: 'function', name: 'facetAddresses', inputs: [] }
+            ]
+
+            const ownershipFacetAbi = [
+                { type: 'function', name: 'owner', inputs: [] },
+                { type: 'function', name: 'transferOwnership', inputs: [{ type: 'address' }] }
+            ]
+
+            const customFacetAbi = [
+                { type: 'function', name: 'customFunction', inputs: [] },
+                { type: 'event', name: 'CustomEvent', inputs: [] }
+            ]
+
+            vi.mocked(mockBroadcastParser.parseBroadcastFile!).mockResolvedValue(broadcastData)
+
+            // Mock ABI loading for Diamond and interfaces
+            vi.mocked(mockAbiLoader.loadContractAbi!)
+                .mockResolvedValueOnce(diamondAbi)              // Diamond implementation
+                .mockResolvedValueOnce(loupeFacetAbi)           // IDiamondLoupe
+                .mockResolvedValueOnce(ownershipFacetAbi)       // IOwnership
+                .mockResolvedValueOnce(customFacetAbi)          // ICustomFacet
+
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'DeployDiamond.s.sol',
+                    yes: true
+                },
+                {
+                    scripts: [
+                        {
+                            name: 'DeployDiamond.s.sol',
+                            contracts: [
+                                {
+                                    name: 'DiamondProxy',
+                                    proxy: {
+                                        implementation: 'Diamond',
+                                        interfaces: ['IDiamondLoupe', 'IOwnership', 'ICustomFacet']
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            )
+
+            expect(mockClient.push).toHaveBeenCalledTimes(1)
+
+            const pushCall = vi.mocked(mockClient.push!).mock.calls[0][0]
+            expect(pushCall.contractName).toBe('DiamondProxy')
+            expect(pushCall.address).toBe('0xDIAMOND')
+            expect(pushCall.network).toBe('mainnet')
+            expect(pushCall.chainId).toBe(1)
+
+            // Verify merged ABI contains all functions and events
+            // Should have: 1 from Diamond + 2 from Loupe + 2 from Ownership + 1 from Custom = 6 functions
+            // Plus: 1 event from Diamond + 1 event from Custom = 2 events
+            const mergedAbi = pushCall.abi
+            const functions = mergedAbi.filter((item: any) => item.type === 'function')
+            const events = mergedAbi.filter((item: any) => item.type === 'event')
+
+            expect(functions.length).toBe(6)
+            expect(events.length).toBe(2)
+
+            // Verify specific functions are present
+            const functionNames = functions.map((f: any) => f.name)
+            expect(functionNames).toContain('diamondCut')          // From Diamond
+            expect(functionNames).toContain('facets')              // From IDiamondLoupe
+            expect(functionNames).toContain('facetAddresses')      // From IDiamondLoupe
+            expect(functionNames).toContain('owner')               // From IOwnership
+            expect(functionNames).toContain('transferOwnership')   // From IOwnership
+            expect(functionNames).toContain('customFunction')      // From ICustomFacet
+
+            // Verify events
+            const eventNames = events.map((e: any) => e.name)
+            expect(eventNames).toContain('DiamondCut')
+            expect(eventNames).toContain('CustomEvent')
+        })
+
+        it('should handle duplicate functions across interfaces by keeping first occurrence', async () => {
+            const broadcastData = {
+                transactions: [
+                    {
+                        transactionType: 'CREATE' as const,
+                        contractName: 'DiamondProxy',
+                        contractAddress: '0xDIAMOND',
+                        function: null
+                    }
+                ],
+                chain: 1,
+                timestamp: 1700000000000
+            }
+
+            const diamondAbi = [
+                { type: 'function', name: 'owner', inputs: [] }
+            ]
+
+            const facetWithDuplicate = [
+                { type: 'function', name: 'owner', inputs: [] },  // Duplicate - should be skipped
+                { type: 'function', name: 'uniqueFunction', inputs: [] }
+            ]
+
+            vi.mocked(mockBroadcastParser.parseBroadcastFile!).mockResolvedValue(broadcastData)
+
+            vi.mocked(mockAbiLoader.loadContractAbi!)
+                .mockResolvedValueOnce(diamondAbi)
+                .mockResolvedValueOnce(facetWithDuplicate)
+
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'DeployDiamond.s.sol',
+                    yes: true
+                },
+                {
+                    scripts: [
+                        {
+                            name: 'DeployDiamond.s.sol',
+                            contracts: [
+                                {
+                                    name: 'DiamondProxy',
+                                    proxy: {
+                                        implementation: 'Diamond',
+                                        interfaces: ['IFacet']
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            )
+
+            const pushCall = vi.mocked(mockClient.push!).mock.calls[0][0]
+            const mergedAbi = pushCall.abi
+            const functions = mergedAbi.filter((item: any) => item.type === 'function')
+
+            // Should only have 2 functions (owner appears once, uniqueFunction once)
+            expect(functions.length).toBe(2)
+            
+            const functionNames = functions.map((f: any) => f.name)
+            expect(functionNames).toEqual(['owner', 'uniqueFunction'])
+        })
+
+        it('should work without interfaces field for regular proxies', async () => {
+            const broadcastData = {
+                transactions: [
+                    {
+                        transactionType: 'CREATE' as const,
+                        contractName: 'RegularProxy',
+                        contractAddress: '0xPROXY',
+                        function: null
+                    }
+                ],
+                chain: 1,
+                timestamp: 1700000000000
+            }
+
+            const implementationAbi = [
+                { type: 'function', name: 'transfer', inputs: [{ type: 'address' }, { type: 'uint256' }] }
+            ]
+
+            vi.mocked(mockBroadcastParser.parseBroadcastFile!).mockResolvedValue(broadcastData)
+            vi.mocked(mockAbiLoader.loadContractAbi!).mockResolvedValue(implementationAbi)
+
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'Deploy.s.sol',
+                    yes: true
+                },
+                {
+                    scripts: [
+                        {
+                            name: 'Deploy.s.sol',
+                            contracts: [
+                                {
+                                    name: 'RegularProxy',
+                                    proxy: {
+                                        implementation: 'TokenV1'
+                                        // No interfaces field - should work fine
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            )
+
+            const pushCall = vi.mocked(mockClient.push!).mock.calls[0][0]
+            expect(pushCall.abi).toEqual(implementationAbi)
+            expect(mockAbiLoader.loadContractAbi).toHaveBeenCalledTimes(1)
+            expect(mockAbiLoader.loadContractAbi).toHaveBeenCalledWith('TokenV1')
+        })
+    })
 })

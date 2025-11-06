@@ -11,7 +11,10 @@ export interface FoundryConfig {
         name: string
         contracts?: Array<{
             name: string
-            proxy?: { implementation: string }
+            proxy?: {
+                implementation: string
+                interfaces?: string[]  // For EIP-2535 Diamond: merge multiple interface ABIs
+            }
         }>
     }>
     scriptDir?: string  // Legacy
@@ -226,10 +229,10 @@ export class FoundryService {
     }
 
     private buildContractConfigMap(
-        contractConfigs: Array<{ name: string; proxy?: { implementation: string } }> | undefined,
+        contractConfigs: Array<{ name: string; proxy?: { implementation: string; interfaces?: string[] } }> | undefined,
         detectedProxies: ProxyMapping[]
-    ): Map<string, { name: string; proxy?: { implementation: string } }> {
-        const contractConfigMap = new Map<string, { name: string; proxy?: { implementation: string } }>()
+    ): Map<string, { name: string; proxy?: { implementation: string; interfaces?: string[] } }> {
+        const contractConfigMap = new Map<string, { name: string; proxy?: { implementation: string; interfaces?: string[] } }>()
 
         // Add manual configs
         if (contractConfigs) {
@@ -281,7 +284,7 @@ export class FoundryService {
 
     private async processDeployment(
         deployment: FoundryTransaction,
-        contractConfigMap: Map<string, { name: string; proxy?: { implementation: string } }>,
+        contractConfigMap: Map<string, { name: string; proxy?: { implementation: string; interfaces?: string[] } }>,
         network: string,
         chainId: number,
         deployedAt: Date,
@@ -298,21 +301,43 @@ export class FoundryService {
             // Check if this contract has a specific config (including proxy settings)
             const contractConfig = contractConfigMap.get(deployment.contractName)
 
-            let contractToLoad = deployment.contractName
+            let abi: any[]
             let isProxy = false
+            let isDiamond = false
 
             if (contractConfig?.proxy) {
-                // This is a proxy - load the implementation ABI instead
-                contractToLoad = contractConfig.proxy.implementation
+                // This is a proxy - load the implementation ABI
+                const implementationName = contractConfig.proxy.implementation
                 isProxy = true
-                console.log(`         🔄 Proxy detected - loading implementation: ${contractToLoad}`)
+                console.log(`         🔄 Proxy detected - loading implementation: ${implementationName}`)
+                
+                abi = await this.deps.abiLoader.loadContractAbi(implementationName)
+                
+                // Check if this is an EIP-2535 Diamond with additional interfaces
+                if (contractConfig.proxy.interfaces && contractConfig.proxy.interfaces.length > 0) {
+                    isDiamond = true
+                    console.log(`         💎 EIP-2535 Diamond detected - merging ${contractConfig.proxy.interfaces.length} interface(s)`)
+                    
+                    // Load and merge all interface ABIs
+                    for (const interfaceName of contractConfig.proxy.interfaces) {
+                        console.log(`         📚 Loading interface: ${interfaceName}`)
+                        const interfaceAbi = await this.deps.abiLoader.loadContractAbi(interfaceName)
+                        abi = this.mergeAbis(abi, interfaceAbi)
+                    }
+                    
+                    console.log(`         ✅ Merged ABI: ${abi.length} total entries`)
+                }
+            } else {
+                // Regular contract
+                abi = await this.deps.abiLoader.loadContractAbi(deployment.contractName)
             }
 
-            const abi = await this.deps.abiLoader.loadContractAbi(contractToLoad)
             const abiHash = calculateAbiHash(abi)
 
-            if (isProxy) {
-                console.log(`         ✅ Implementation ABI loaded: ${contractToLoad}`)
+            if (isDiamond) {
+                console.log(`         ✅ Diamond ABI complete (implementation + ${contractConfig!.proxy!.interfaces!.length} interfaces)`)
+            } else if (isProxy) {
+                console.log(`         ✅ Implementation ABI loaded`)
             } else {
                 console.log(`         ✅ ABI loaded from out/ folder`)
             }
@@ -333,6 +358,49 @@ export class FoundryService {
             console.error(`         ❌ Failed to load ABI: ${message}`)
             throw error
         }
+    }
+
+    /**
+     * Merge two ABIs, removing duplicates based on function/event signatures
+     * Used for EIP-2535 Diamond contracts that combine multiple interfaces
+     */
+    private mergeAbis(baseAbi: any[], interfaceAbi: any[]): any[] {
+        const merged = [...baseAbi]
+        const signatures = new Set<string>()
+        
+        // Build signature set from base ABI
+        for (const item of baseAbi) {
+            const sig = this.getAbiItemSignature(item)
+            if (sig) {
+                signatures.add(sig)
+            }
+        }
+        
+        // Add interface items that don't conflict
+        for (const item of interfaceAbi) {
+            const sig = this.getAbiItemSignature(item)
+            if (sig && !signatures.has(sig)) {
+                merged.push(item)
+                signatures.add(sig)
+            }
+        }
+        
+        return merged
+    }
+
+    /**
+     * Get a unique signature for an ABI item (function or event)
+     */
+    private getAbiItemSignature(item: any): string | null {
+        if (item.type === 'function') {
+            const inputs = item.inputs?.map((i: any) => i.type).join(',') || ''
+            return `function:${item.name}(${inputs})`
+        } else if (item.type === 'event') {
+            const inputs = item.inputs?.map((i: any) => i.type).join(',') || ''
+            return `event:${item.name}(${inputs})`
+        }
+        // For constructor, fallback, receive - include them all as they're rare
+        return null
     }
 
     private showConfirmationTable(allAbis: PushAbiInput[]): void {
