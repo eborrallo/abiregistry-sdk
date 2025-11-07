@@ -67,7 +67,9 @@ export class FoundryService {
         }
 
         if (allAbis.length === 0) {
-            throw new Error('No ABIs to push. Check your deploy scripts and configuration.')
+            console.log('\n⚠️  No ABIs to push. All deployments are on localhost or no valid deployments found.')
+            console.log('💡 Tip: Deploy to a real network to push ABIs to the registry.')
+            return
         }
 
         // Show confirmation table
@@ -406,18 +408,35 @@ export class FoundryService {
     private showConfirmationTable(allAbis: PushAbiInput[]): void {
         console.log('\n📋 ABIs ready to push:\n')
 
-        const tableRows = allAbis.map((abi) => [
-            abi.contractName,
-            abi.address.substring(0, 10) + '...',
-            abi.network || 'unknown',
-            abi.label || '(no label)',
-            `${abi.abi.length} entries`,
-        ])
+        // Group ABIs by network
+        const abisByNetwork = new Map<string, PushAbiInput[]>()
+        for (const abi of allAbis) {
+            const network = abi.network || 'unknown'
+            if (!abisByNetwork.has(network)) {
+                abisByNetwork.set(network, [])
+            }
+            abisByNetwork.get(network)!.push(abi)
+        }
 
-        this.deps.displayTable(
-            ['Contract', 'Address', 'Network', 'Label', 'ABI Size'],
-            tableRows
-        )
+        // Display one table per network
+        for (const [network, abis] of abisByNetwork.entries()) {
+            console.log(`\n🔗 ${network.toUpperCase()}`)
+            console.log(`   ${abis.length} contract(s)\n`)
+
+            const tableRows = abis.map((abi) => [
+                abi.contractName,
+                abi.address.substring(0, 10) + '...',
+                abi.label || '(no label)',
+                `${abi.abi.length} entries`,
+            ])
+
+            this.deps.displayTable(
+                ['Contract', 'Address', 'Label', 'ABI Size'],
+                tableRows
+            )
+        }
+
+        console.log(`\n📊 Total: ${allAbis.length} ABI(s) across ${abisByNetwork.size} chain(s)`)
     }
 
     private async pushToRegistry(allAbis: PushAbiInput[]): Promise<void> {

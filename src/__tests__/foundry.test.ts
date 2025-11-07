@@ -560,7 +560,7 @@ describe('Foundry Service', () => {
             ).rejects.toThrow('Script directory is required')
         })
 
-        it('should throw error when no ABIs found', async () => {
+        it('should return early when no ABIs found', async () => {
             const broadcastData = {
                 transactions: [],
                 chain: 1,
@@ -569,16 +569,18 @@ describe('Foundry Service', () => {
 
             vi.mocked(mockBroadcastParser.parseBroadcastFile!).mockResolvedValue(broadcastData)
 
-            await expect(
-                foundryService.push(
-                    {
-                        apiKey: 'test-key',
-                        scriptDir: 'Deploy.s.sol',
-                        yes: true
-                    },
-                    {}
-                )
-            ).rejects.toThrow('No ABIs to push')
+            // Should not throw, just return early
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'Deploy.s.sol',
+                    yes: true
+                },
+                {}
+            )
+
+            // Should not attempt to push anything
+            expect(mockClient.push).not.toHaveBeenCalled()
         })
 
         it('should throw error when ABI loading fails', async () => {
@@ -927,6 +929,128 @@ describe('Foundry Service', () => {
             expect(pushCall.abi).toEqual(implementationAbi)
             expect(mockAbiLoader.loadContractAbi).toHaveBeenCalledTimes(1)
             expect(mockAbiLoader.loadContractAbi).toHaveBeenCalledWith('TokenV1')
+        })
+    })
+
+    describe('Localhost Filtering', () => {
+        it('should filter out localhost deployments at discovery level', async () => {
+            // Mock discovery to return empty array (localhost filtered out)
+            vi.mocked(mockBroadcastDiscovery.findBroadcastFiles!).mockResolvedValue([])
+
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'Deploy.s.sol',
+                    yes: true
+                },
+                { scripts: [{ name: 'Deploy.s.sol' }] }
+            )
+
+            // Should not push any ABIs (no broadcast files found after filtering)
+            expect(mockClient.push).not.toHaveBeenCalled()
+            // Should not even try to parse broadcast files
+            expect(mockBroadcastParser.parseBroadcastFile).not.toHaveBeenCalled()
+        })
+
+        it('should filter out localhost but push other chains', async () => {
+            // Discovery service already filtered out localhost, only returns mainnet
+            vi.mocked(mockBroadcastDiscovery.findBroadcastFiles!).mockResolvedValue([
+                '/test/project/broadcast/Deploy.s.sol/1/run-latest.json'
+            ])
+
+            const mainnetBroadcast = {
+                transactions: [
+                    {
+                        transactionType: 'CREATE' as const,
+                        contractName: 'MainnetToken',
+                        contractAddress: '0xMAINNET',
+                        function: null
+                    }
+                ],
+                chain: 1,
+                timestamp: 1700000000000
+            }
+
+            vi.mocked(mockBroadcastParser.parseBroadcastFile!).mockResolvedValue(mainnetBroadcast)
+            vi.mocked(mockBroadcastParser.getNetworkFromChainId!).mockReturnValue('mainnet')
+
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'Deploy.s.sol',
+                    yes: true
+                },
+                { scripts: [{ name: 'Deploy.s.sol' }] }
+            )
+
+            // Should only push mainnet deployment (localhost was filtered at discovery)
+            expect(mockClient.push).toHaveBeenCalledTimes(1)
+            const pushCall = vi.mocked(mockClient.push!).mock.calls[0][0]
+            expect(pushCall.contractName).toBe('MainnetToken')
+            expect(pushCall.network).toBe('mainnet')
+        })
+    })
+
+    describe('Chain Grouping in Table', () => {
+        it('should display separate tables for each chain', async () => {
+            vi.mocked(mockBroadcastDiscovery.findBroadcastFiles!).mockResolvedValue([
+                '/test/project/broadcast/Deploy.s.sol/1/run-latest.json',
+                '/test/project/broadcast/Deploy.s.sol/137/run-latest.json'
+            ])
+
+            const mainnetBroadcast = {
+                transactions: [
+                    {
+                        transactionType: 'CREATE' as const,
+                        contractName: 'MainnetToken',
+                        contractAddress: '0xMAINNET',
+                        function: null
+                    }
+                ],
+                chain: 1,
+                timestamp: 1700000000000
+            }
+
+            const polygonBroadcast = {
+                transactions: [
+                    {
+                        transactionType: 'CREATE' as const,
+                        contractName: 'PolygonToken',
+                        contractAddress: '0xPOLYGON',
+                        function: null
+                    }
+                ],
+                chain: 137,
+                timestamp: 1700000000000
+            }
+
+            vi.mocked(mockBroadcastParser.parseBroadcastFile!)
+                .mockResolvedValueOnce(mainnetBroadcast)
+                .mockResolvedValueOnce(polygonBroadcast)
+
+            vi.mocked(mockBroadcastParser.getNetworkFromChainId!)
+                .mockReturnValueOnce('mainnet')
+                .mockReturnValueOnce('polygon')
+
+            await foundryService.push(
+                {
+                    apiKey: 'test-key',
+                    scriptDir: 'Deploy.s.sol',
+                    yes: true // Use yes flag to skip confirmation
+                },
+                { scripts: [{ name: 'Deploy.s.sol' }] }
+            )
+
+            // Should call displayTable twice (once per chain)
+            expect(mockDisplayTable).toHaveBeenCalledTimes(2)
+
+            // Verify table headers don't include Network column anymore
+            const firstCall = vi.mocked(mockDisplayTable).mock.calls[0]
+            expect(firstCall[0]).toEqual(['Contract', 'Address', 'Label', 'ABI Size'])
+
+            // Both calls should have the same headers
+            const secondCall = vi.mocked(mockDisplayTable).mock.calls[1]
+            expect(secondCall[0]).toEqual(['Contract', 'Address', 'Label', 'ABI Size'])
         })
     })
 })
